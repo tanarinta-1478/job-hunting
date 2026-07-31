@@ -1,0 +1,2891 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>就活タスク管理</title>
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --bg-card: #ffffff;
+      --bg-header: #2c3e50;
+      --bg-subtle: #f8f9fa;
+      --text: #333333;
+      --text-muted: #666666;
+      --text-faint: #aaaaaa;
+      --border: #e0e0e0;
+      --border-soft: #f0f0f0;
+      --primary: #3498db;
+      --primary-hover: #2980b9;
+      --danger: #e74c3c;
+      --warning: #f39c12;
+      --success: #27ae60;
+      --gmail: #ea4335;
+      --purple: #9b59b6;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-modal: 0 10px 40px rgba(0,0,0,0.2);
+    }
+
+    [data-theme="dark"] {
+      --bg: #1a1a1a;
+      --bg-card: #2a2a2a;
+      --bg-header: #0d1b2a;
+      --bg-subtle: #333333;
+      --text: #e0e0e0;
+      --text-muted: #aaaaaa;
+      --text-faint: #777777;
+      --border: #444444;
+      --border-soft: #383838;
+      --primary: #5dade2;
+      --primary-hover: #3498db;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+      --shadow-modal: 0 10px 40px rgba(0,0,0,0.5);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    header {
+      background: var(--bg-header);
+      color: white;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    header h1 { font-size: 18px; font-weight: 600; }
+    .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .header-actions span { font-size: 12px; color: rgba(255,255,255,0.6); }
+
+    .icon-btn {
+      width: 32px; height: 32px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.2); }
+
+    /* Tabs */
+    .tabs {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      overflow-x: auto;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .tab {
+      padding: 14px 20px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-muted);
+      border-bottom: 3px solid transparent;
+      white-space: nowrap;
+      transition: all 0.15s;
+      background: none;
+      border-left: none;
+      border-right: none;
+      border-top: none;
+      font-family: inherit;
+    }
+    .tab:hover { color: var(--text); background: var(--bg-subtle); }
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      font-weight: 600;
+    }
+    .tab-badge {
+      display: inline-block;
+      background: var(--danger);
+      color: white;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    .container { max-width: 980px; margin: 0 auto; padding: 20px 16px; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border-radius: 8px;
+      padding: 12px 14px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .stat-card .num { font-size: 22px; font-weight: 700; }
+    .stat-card .label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .filter-btn.active, .filter-btn:hover {
+      background: var(--bg-header);
+      color: white;
+      border-color: var(--bg-header);
+    }
+    .spacer { flex: 1; }
+
+    .search-box {
+      flex: 1;
+      min-width: 180px;
+      max-width: 280px;
+      padding: 7px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+    }
+    .sort-select {
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      padding: 8px 16px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-gmail {
+      padding: 7px 14px;
+      background: var(--gmail);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .company-list { display: flex; flex-direction: column; gap: 8px; }
+    .company-card {
+      background: var(--bg-card);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .company-header {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      cursor: pointer;
+      gap: 12px;
+    }
+    .company-header:hover { background: var(--bg-subtle); }
+
+    .priority-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .priority-1 { background: #e74c3c; }
+    .priority-2 { background: #f39c12; }
+    .priority-3 { background: #95a5a6; }
+
+    .company-name { font-weight: 600; font-size: 15px; }
+    .company-industry { font-size: 12px; color: var(--text-faint); }
+
+    .status-badge {
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .status-気になる     { background: #fef0d9; color: #b8651b; }
+    .status-未応募       { background: #ecf0f1; color: #666; }
+    .status-ES提出済     { background: #d5e8d4; color: #27ae60; }
+    .status-書類選考中   { background: #dae8fc; color: #2980b9; }
+    .status-一次面接     { background: #fff2cc; color: #b07d00; }
+    .status-二次面接     { background: #ffe6cc; color: #e67e22; }
+    .status-最終面接     { background: #f8cecc; color: #c0392b; }
+    .status-インターン合格 { background: #d1f2eb; color: #117a65; }
+    .status-内定         { background: #d5e8d4; color: #1a8a4a; }
+    .status-合格辞退     { background: #e2efec; color: #55897f; }
+    .status-不合格       { background: #f5f5f5; color: #aaa; }
+    .status-辞退         { background: #f5f5f5; color: #aaa; }
+    [data-theme="dark"] .status-badge { filter: brightness(0.85); }
+
+    /* ステータス順ソート時のグループ見出し */
+    .status-group-header {
+      display: flex; align-items: center; gap: 8px;
+      margin: 14px 0 2px; padding: 0 2px;
+    }
+    .status-group-header:first-child { margin-top: 2px; }
+    .status-group-count { font-size: 12px; color: var(--text-muted); }
+    .status-group-line { flex: 1; height: 1px; background: var(--border); }
+
+    .deadline-chip { font-size: 11px; color: var(--danger); white-space: nowrap; }
+    .deadline-chip.ok { color: var(--text-faint); }
+
+    .expand-icon { color: var(--text-faint); font-size: 12px; transition: transform 0.2s; }
+    .expand-icon.open { transform: rotate(90deg); }
+
+    .company-detail {
+      padding: 0 16px 16px;
+      border-top: 1px solid var(--border-soft);
+      display: none;
+    }
+    .company-detail.open { display: block; }
+
+    .detail-section { margin-top: 14px; }
+    .detail-section h4 {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .timeline {
+      display: flex;
+      align-items: flex-start;
+      gap: 2px;
+      flex-wrap: wrap;
+      padding: 8px 0;
+    }
+    .timeline-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+      min-width: 38px;
+    }
+    .timeline-dot {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--border);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .timeline-dot.done { background: var(--success); }
+    .timeline-dot.current { background: var(--primary); box-shadow: 0 0 0 3px rgba(52,152,219,0.2); }
+    .timeline-dot.offer     { background: var(--success); }
+    .timeline-dot.fail      { background: var(--danger); }
+    .timeline-dot.withdrawn { background: var(--text-faint); }
+    .timeline-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+      white-space: nowrap;
+    }
+    .timeline-date {
+      font-size: 10px;
+      color: var(--text-faint);
+      min-height: 13px;
+    }
+    .timeline-line {
+      width: 14px; height: 2px;
+      background: var(--border);
+      flex-shrink: 0;
+      margin-top: 10px;
+    }
+    .timeline-line.done { background: var(--success); }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border-soft);
+      font-size: 14px;
+    }
+    .task-item:last-child { border-bottom: none; }
+    .task-item input[type="checkbox"] { cursor: pointer; width: 15px; height: 15px; }
+    .task-title { flex: 1; }
+    .task-title.done { text-decoration: line-through; color: var(--text-faint); }
+    .task-deadline { font-size: 11px; color: var(--text-faint); }
+    .task-deadline.urgent { color: var(--danger); font-weight: 600; }
+    .task-delete { color: var(--border); cursor: pointer; padding: 0 4px; font-size: 16px; }
+    .task-delete:hover { color: var(--danger); }
+    .task-company {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--bg-subtle);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .add-task-form { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .add-task-form input[type="text"] {
+      flex: 1;
+      min-width: 150px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+    }
+    .add-task-form input[type="date"] {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+    }
+    .btn-small {
+      padding: 6px 12px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-secondary {
+      padding: 6px 12px;
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .notes-section textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 13px;
+      resize: vertical;
+      min-height: 60px;
+      font-family: inherit;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+    .btn-danger {
+      padding: 6px 12px;
+      background: var(--bg-card);
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-edit {
+      padding: 6px 12px;
+      background: var(--bg-card);
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--bg-card);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-modal);
+    }
+    .modal h2 { font-size: 17px; margin-bottom: 20px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+    .btn-cancel {
+      padding: 8px 16px;
+      background: var(--bg-card);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--bg-header);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      z-index: 2000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--text-faint);
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+
+    .sync-badge {
+      display: inline-block;
+      background: var(--gmail);
+      color: white;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 10px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .day-section { margin-bottom: 18px; }
+    .day-header {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .day-header.today { color: var(--danger); font-weight: 600; }
+    .day-header.overdue { color: var(--danger); font-weight: 600; }
+
+    .task-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-card);
+      padding: 10px 14px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      box-shadow: var(--shadow);
+    }
+
+    .es-card {
+      background: var(--bg-card);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+    }
+    .es-question { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+    .es-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-faint);
+      margin-top: 6px;
+    }
+    .es-answer {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 80px;
+      margin-top: 6px;
+    }
+    .char-count { font-size: 11px; color: var(--text-muted); }
+    .char-count.over { color: var(--danger); font-weight: 600; }
+
+    /* Sub-section cards (tests/interviews/og visits) */
+    .sub-card {
+      background: var(--bg-subtle);
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      font-size: 13px;
+      position: relative;
+    }
+    .sub-card-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .sub-card-title { font-weight: 600; flex: 1; }
+    .sub-card-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .sub-card-actions { display: flex; gap: 4px; }
+    .sub-card .ic-btn {
+      background: none;
+      border: none;
+      color: var(--text-faint);
+      cursor: pointer;
+      font-size: 13px;
+      padding: 2px 6px;
+    }
+    .sub-card .ic-btn:hover { color: var(--primary); }
+    .sub-card .ic-btn.del:hover { color: var(--danger); }
+
+    .test-status-未受験 { background: #ecf0f1; color: #666; }
+    .test-status-受験予定 { background: #fff2cc; color: #b07d00; }
+    .test-status-受験済 { background: #d5e8d4; color: #27ae60; }
+
+    /* Calendar */
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .cal-month-title { font-size: 18px; font-weight: 600; }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      background: var(--border-soft);
+      padding: 4px;
+      border-radius: 8px;
+    }
+    .cal-dow {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 6px 0;
+      background: var(--bg-card);
+      font-weight: 600;
+    }
+    .cal-dow.sun { color: var(--danger); }
+    .cal-dow.sat { color: var(--primary); }
+    .cal-day {
+      background: var(--bg-card);
+      min-height: 70px;
+      padding: 4px 6px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+    .cal-day:hover { background: var(--bg-subtle); }
+    .cal-day.other-month { opacity: 0.35; }
+    .cal-day.today {
+      outline: 2px solid var(--primary);
+      outline-offset: -2px;
+    }
+    .cal-date {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .cal-date.sun { color: var(--danger); }
+    .cal-date.sat { color: var(--primary); }
+    .cal-item {
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: white;
+    }
+    .cal-item.deadline { background: var(--danger); }
+    .cal-item.task     { background: var(--primary); }
+    .cal-item.interview{ background: var(--purple); }
+    .cal-item.test     { background: var(--warning); }
+    .cal-more {
+      font-size: 9px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      .cal-day { min-height: 56px; padding: 2px 3px; }
+      .cal-date { font-size: 10px; }
+      .cal-item { font-size: 8px; }
+    }
+
+    /* Story Bank */
+    .story-card {
+      background: var(--bg-card);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+      border-left: 4px solid var(--primary);
+    }
+    .story-card.cat-ガクチカ    { border-left-color: #3498db; }
+    .story-card.cat-自己PR     { border-left-color: #27ae60; }
+    .story-card.cat-強み       { border-left-color: #f39c12; }
+    .story-card.cat-弱み       { border-left-color: #95a5a6; }
+    .story-card.cat-志望動機   { border-left-color: #9b59b6; }
+    .story-card.cat-逆質問     { border-left-color: #e74c3c; }
+    .story-card.cat-その他     { border-left-color: #7f8c8d; }
+    .story-head {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      margin-bottom: 4px;
+    }
+    .story-cat {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .story-title { font-weight: 600; font-size: 14px; flex: 1; }
+    .story-content {
+      font-size: 13px;
+      color: var(--text-muted);
+      white-space: pre-wrap;
+      max-height: 4.2em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin: 6px 0;
+    }
+    .story-card.expanded .story-content { max-height: none; }
+    .story-meta {
+      display: flex;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--text-faint);
+      flex-wrap: wrap;
+    }
+    .story-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+    @media (max-width: 600px) {
+      header { padding: 12px 16px; }
+      header h1 { font-size: 16px; }
+      .container { padding: 14px 12px; }
+      .tab { padding: 12px 14px; font-size: 13px; }
+      .stat-card .num { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>就活タスク管理</h1>
+  <div class="header-actions">
+    <span id="sync-status"></span>
+    <button class="btn-gmail" onclick="showGmailHelp()">Gmail同期</button>
+    <button class="icon-btn" onclick="showImportExport()" title="エクスポート/インポート">⇅</button>
+    <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="ダークモード切替">🌙</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="companies" onclick="switchTab(this)">企業 <span id="tab-count-companies"></span></button>
+  <button class="tab" data-tab="tasks"     onclick="switchTab(this)">今週のタスク <span class="tab-badge" id="tab-badge-tasks" style="display:none;"></span></button>
+  <button class="tab" data-tab="calendar"  onclick="switchTab(this)">📅 カレンダー</button>
+  <button class="tab" data-tab="es"        onclick="switchTab(this)">ES管理</button>
+  <button class="tab" data-tab="stories"   onclick="switchTab(this)">📚 ストーリー</button>
+  <button class="tab" data-tab="trash"     onclick="switchTab(this)">🗑 削除済み <span id="tab-count-trash"></span></button>
+</nav>
+
+<div class="container">
+  <div id="notif-banner-host"></div>
+
+  <!-- 企業タブ -->
+  <div class="tab-pane active" id="pane-companies">
+    <div class="stats" id="stats"></div>
+
+    <div class="toolbar">
+      <button class="filter-btn active" data-filter="all"       onclick="setFilter(this)">すべて</button>
+      <button class="filter-btn"        data-filter="watching"  onclick="setFilter(this)">気になる</button>
+      <button class="filter-btn"        data-filter="active"    onclick="setFilter(this)">選考中</button>
+      <button class="filter-btn"        data-filter="interview" onclick="setFilter(this)">面接</button>
+      <button class="filter-btn"        data-filter="offer"     onclick="setFilter(this)">合格実績</button>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" class="search-box" id="search-box" placeholder="🔍 企業名・業種で検索..." oninput="render()">
+      <select class="sort-select" id="sort-select" onchange="render()">
+        <option value="updated">更新順</option>
+        <option value="deadline">締切が近い順</option>
+        <option value="priority">志望度順</option>
+        <option value="name">企業名順</option>
+        <option value="status">ステータス順</option>
+        <option value="status-desc">ステータス逆順</option>
+      </select>
+      <div class="spacer"></div>
+      <button class="btn-primary" onclick="openAddModal()">＋ 企業を追加</button>
+    </div>
+
+    <div class="company-list" id="company-list"></div>
+  </div>
+
+  <!-- 今週のタスクタブ -->
+  <div class="tab-pane" id="pane-tasks">
+    <div class="toolbar">
+      <button class="filter-btn active" data-task-filter="week"   onclick="setTaskFilter(this)">今週</button>
+      <button class="filter-btn"        data-task-filter="all"    onclick="setTaskFilter(this)">すべて</button>
+      <button class="filter-btn"        data-task-filter="overdue" onclick="setTaskFilter(this)">期限切れ</button>
+    </div>
+    <div id="weekly-tasks"></div>
+  </div>
+
+  <!-- カレンダータブ -->
+  <div class="tab-pane" id="pane-calendar">
+    <div class="cal-header">
+      <button class="btn-secondary" onclick="changeMonth(-1)">‹ 前月</button>
+      <span class="cal-month-title" id="cal-title"></span>
+      <button class="btn-secondary" onclick="changeMonth(1)">翌月 ›</button>
+      <button class="btn-secondary" onclick="goToday()">今日</button>
+    </div>
+    <div style="display:flex;gap:14px;font-size:11px;color:var(--text-muted);margin-bottom:10px;flex-wrap:wrap;">
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--danger);border-radius:2px;vertical-align:middle;"></span> 締切</span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--primary);border-radius:2px;vertical-align:middle;"></span> タスク</span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--purple);border-radius:2px;vertical-align:middle;"></span> 面接</span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--warning);border-radius:2px;vertical-align:middle;"></span> テスト</span>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+
+  <!-- ES管理タブ -->
+  <div class="tab-pane" id="pane-es">
+    <div class="toolbar">
+      <select class="sort-select" id="es-company-select" onchange="renderES()" style="min-width:200px;"></select>
+      <div class="spacer"></div>
+      <button class="btn-primary" onclick="openESModal()" id="es-add-btn">＋ ESを追加</button>
+    </div>
+    <div id="es-list"></div>
+  </div>
+
+  <!-- 削除済みタブ -->
+  <div class="tab-pane" id="pane-trash">
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.7;">
+      削除した企業はここに移動されます。再度Gmail同期しても**メイン一覧には復活しません**。<br>
+      復元するとメイン一覧に戻ります。完全削除すると元には戻せません。
+    </p>
+    <div id="trash-list"></div>
+  </div>
+
+  <!-- ストーリーバンクタブ -->
+  <div class="tab-pane" id="pane-stories">
+    <div class="toolbar">
+      <button class="filter-btn active" data-story-cat="all"       onclick="setStoryCat(this)">すべて</button>
+      <button class="filter-btn"        data-story-cat="ガクチカ"   onclick="setStoryCat(this)">ガクチカ</button>
+      <button class="filter-btn"        data-story-cat="自己PR"    onclick="setStoryCat(this)">自己PR</button>
+      <button class="filter-btn"        data-story-cat="強み"       onclick="setStoryCat(this)">強み</button>
+      <button class="filter-btn"        data-story-cat="弱み"       onclick="setStoryCat(this)">弱み</button>
+      <button class="filter-btn"        data-story-cat="志望動機"   onclick="setStoryCat(this)">志望動機</button>
+      <button class="filter-btn"        data-story-cat="逆質問"     onclick="setStoryCat(this)">逆質問</button>
+      <button class="filter-btn"        data-story-cat="その他"     onclick="setStoryCat(this)">その他</button>
+      <div class="spacer"></div>
+      <button class="btn-primary" onclick="openStoryModal()">＋ ストーリーを追加</button>
+    </div>
+    <div id="story-list"></div>
+  </div>
+</div>
+
+<!-- 企業追加/編集モーダル -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2 id="modal-title">企業を追加</h2>
+    <div class="form-group">
+      <label>企業名 *</label>
+      <input type="text" id="f-name" placeholder="例：株式会社サンプル">
+    </div>
+    <div class="form-group">
+      <label>業種</label>
+      <input type="text" id="f-industry" placeholder="例：IT・ソフトウェア">
+    </div>
+    <div class="form-group">
+      <label>選考ステータス</label>
+      <select id="f-status">
+        <option>気になる</option>
+        <option>未応募</option>
+        <option>ES提出済</option>
+        <option>書類選考中</option>
+        <option>一次面接</option>
+        <option>二次面接</option>
+        <option>最終面接</option>
+        <option>インターン合格</option>
+        <option>内定</option>
+        <option>合格辞退</option>
+        <option>不合格</option>
+        <option>辞退</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>次の締切日</label>
+      <input type="date" id="f-deadline">
+    </div>
+    <div class="form-group">
+      <label>志望度</label>
+      <select id="f-priority">
+        <option value="1">★★★ 第一志望</option>
+        <option value="2">★★☆ 第二志望</option>
+        <option value="3">★☆☆ その他</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>メモ</label>
+      <textarea id="f-notes" rows="3" placeholder="企業メモ、面接感想など"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-primary" onclick="saveCompany()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ES追加/編集モーダル -->
+<div class="modal-overlay" id="es-modal">
+  <div class="modal">
+    <h2 id="es-modal-title">ESを追加</h2>
+    <div class="form-group">
+      <label>対象企業 *</label>
+      <select id="es-f-company"></select>
+    </div>
+    <div class="form-group">
+      <label>設問 *</label>
+      <textarea id="es-f-question" rows="2" placeholder="例：あなたの強みを教えてください"></textarea>
+    </div>
+    <div class="form-group">
+      <label>文字数制限</label>
+      <input type="number" id="es-f-limit" placeholder="例：400" min="0">
+    </div>
+    <div class="form-group">
+      <label>提出締切</label>
+      <input type="date" id="es-f-deadline">
+    </div>
+    <div class="form-group">
+      <label>回答</label>
+      <textarea id="es-f-answer" rows="6" placeholder="回答を入力..."></textarea>
+      <button class="btn-secondary" onclick="openStoryPickerForES()" style="margin-top:6px;">📚 ストーリーから引用</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeESModal()">キャンセル</button>
+      <button class="btn-primary" onclick="saveES()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ストーリー追加/編集モーダル -->
+<div class="modal-overlay" id="story-modal">
+  <div class="modal">
+    <h2 id="story-modal-title">ストーリーを追加</h2>
+    <div class="form-group">
+      <label>カテゴリ *</label>
+      <select id="story-f-cat">
+        <option>ガクチカ</option>
+        <option>自己PR</option>
+        <option>強み</option>
+        <option>弱み</option>
+        <option>志望動機</option>
+        <option>逆質問</option>
+        <option>その他</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>タイトル *</label>
+      <input type="text" id="story-f-title" placeholder="例：部活でのリーダー経験">
+    </div>
+    <div class="form-group">
+      <label>本文</label>
+      <textarea id="story-f-content" rows="8" placeholder="STAR法（Situation/Task/Action/Result）で書くのがおすすめ"></textarea>
+      <div class="char-count" id="story-char"></div>
+    </div>
+    <div class="form-group">
+      <label>タグ（カンマ区切り）</label>
+      <input type="text" id="story-f-tags" placeholder="例：リーダーシップ, チームワーク">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeStoryModal()">キャンセル</button>
+      <button class="btn-primary" onclick="saveStory()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ストーリー選択モーダル（ES画面から引用用） -->
+<div class="modal-overlay" id="story-picker">
+  <div class="modal">
+    <h2>ストーリーを選択して引用</h2>
+    <div class="toolbar" style="margin-bottom:8px;">
+      <select class="sort-select" id="picker-cat" onchange="renderStoryPicker()">
+        <option value="all">すべてのカテゴリ</option>
+        <option>ガクチカ</option>
+        <option>自己PR</option>
+        <option>強み</option>
+        <option>弱み</option>
+        <option>志望動機</option>
+        <option>逆質問</option>
+        <option>その他</option>
+      </select>
+    </div>
+    <div id="picker-list" style="max-height:50vh;overflow-y:auto;"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeStoryPicker()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- WEBテスト追加/編集モーダル -->
+<div class="modal-overlay" id="test-modal">
+  <div class="modal">
+    <h2 id="test-modal-title">WEBテストを追加</h2>
+    <input type="hidden" id="test-f-company-id">
+    <div class="form-group">
+      <label>テスト種類 *</label>
+      <select id="test-f-type">
+        <option>SPI</option>
+        <option>玉手箱</option>
+        <option>TG-WEB</option>
+        <option>GAB</option>
+        <option>CAB</option>
+        <option>性格検査</option>
+        <option>独自テスト</option>
+        <option>その他</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>ステータス</label>
+      <select id="test-f-status">
+        <option>未受験</option>
+        <option>受験予定</option>
+        <option>受験済</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>受験/提出 締切日</label>
+      <input type="date" id="test-f-deadline">
+    </div>
+    <div class="form-group">
+      <label>スコア・結果（任意）</label>
+      <input type="text" id="test-f-score" placeholder="例：言語70/非言語80、合格 等">
+    </div>
+    <div class="form-group">
+      <label>メモ</label>
+      <textarea id="test-f-notes" rows="2" placeholder="受験URL、感触など"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeTestModal()">キャンセル</button>
+      <button class="btn-primary" onclick="saveTest()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 面接記録追加/編集モーダル -->
+<div class="modal-overlay" id="interview-modal">
+  <div class="modal">
+    <h2 id="interview-modal-title">面接記録を追加</h2>
+    <input type="hidden" id="interview-f-company-id">
+    <div class="form-group">
+      <label>面接段階 *</label>
+      <select id="interview-f-round">
+        <option>GD（グループディスカッション）</option>
+        <option>一次面接</option>
+        <option>二次面接</option>
+        <option>三次面接</option>
+        <option>最終面接</option>
+        <option>その他</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>日時</label>
+      <input type="date" id="interview-f-date">
+    </div>
+    <div class="form-group">
+      <label>面接形式</label>
+      <select id="interview-f-format">
+        <option>対面</option>
+        <option>Web</option>
+        <option>電話</option>
+        <option>録画</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>面接官（人数・職位など）</label>
+      <input type="text" id="interview-f-interviewer" placeholder="例：人事2名、現場マネージャー1名">
+    </div>
+    <div class="form-group">
+      <label>聞かれた質問</label>
+      <textarea id="interview-f-questions" rows="4" placeholder="質問を箇条書きで..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>自分の回答・反応</label>
+      <textarea id="interview-f-answers" rows="4" placeholder="どう答えたか..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>感想・反省</label>
+      <textarea id="interview-f-impression" rows="3" placeholder="うまく答えられたか、改善点など"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeInterviewModal()">キャンセル</button>
+      <button class="btn-primary" onclick="saveInterview()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- OB/OG訪問モーダル -->
+<div class="modal-overlay" id="og-modal">
+  <div class="modal">
+    <h2 id="og-modal-title">OB/OG訪問を追加</h2>
+    <input type="hidden" id="og-f-company-id">
+    <div class="form-group">
+      <label>氏名 *</label>
+      <input type="text" id="og-f-name" placeholder="例：山田太郎">
+    </div>
+    <div class="form-group">
+      <label>役職・部署</label>
+      <input type="text" id="og-f-position" placeholder="例：人事部 採用担当、技術部マネージャー">
+    </div>
+    <div class="form-group">
+      <label>訪問日</label>
+      <input type="date" id="og-f-date">
+    </div>
+    <div class="form-group">
+      <label>話した内容・聞いたこと</label>
+      <textarea id="og-f-notes" rows="5" placeholder="質問内容、回答、印象など"></textarea>
+    </div>
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="og-f-followup" style="width:auto;display:inline-block;margin-right:6px;">
+        お礼メール送信済み
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeOGModal()">キャンセル</button>
+      <button class="btn-primary" onclick="saveOG()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- カレンダー日詳細モーダル -->
+<div class="modal-overlay" id="cal-detail-modal">
+  <div class="modal">
+    <h2 id="cal-detail-title"></h2>
+    <div id="cal-detail-content"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeCalDetail()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- Gmail同期ヘルプ -->
+<div class="modal-overlay" id="gmail-modal">
+  <div class="modal">
+    <h2>Gmail同期の方法</h2>
+    <p style="font-size:14px;color:var(--text-muted);line-height:1.8;">
+      Claude Code（VSCode拡張）のチャットで以下のように入力してください：
+    </p>
+    <div style="background:var(--bg-subtle);border-radius:6px;padding:14px;margin:14px 0;font-size:14px;font-family:monospace;">
+      Gmail同期して
+    </div>
+    <p style="font-size:13px;color:var(--text-faint);line-height:1.7;">
+      Claudeが就活関連メールから企業情報・タスクを抽出して <code>sync-data.js</code> を更新します。その後このページをリロード（F5）してください。
+    </p>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="closeGmailModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- インポート/エクスポート -->
+<div class="modal-overlay" id="ie-modal">
+  <div class="modal">
+    <h2>データのバックアップ</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.7;">
+      LocalStorageは永続化されますが、ブラウザ消去・別端末利用時のため定期的なエクスポートを推奨します。
+    </p>
+    <div class="modal-actions" style="justify-content:flex-start;">
+      <button class="btn-primary" onclick="exportData()">📥 JSON出力</button>
+      <button class="btn-secondary" onclick="document.getElementById('import-file').click()">📤 JSON読み込み</button>
+      <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importData(event)">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeIEModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 面接準備テンプレ -->
+<div class="modal-overlay" id="template-modal">
+  <div class="modal">
+    <h2>面接準備テンプレートを追加</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+      以下のタスクが <span id="template-target" style="font-weight:600;"></span> に追加されます：
+    </p>
+    <div id="template-list" style="background:var(--bg-subtle);border-radius:6px;padding:14px;margin-bottom:14px;font-size:13px;line-height:1.9;"></div>
+    <div class="form-group">
+      <label>面接日</label>
+      <input type="date" id="template-date">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeTemplateModal()">キャンセル</button>
+      <button class="btn-primary" onclick="applyTemplate()">追加</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="sync-data.js"></script>
+<script>
+// ===== 定数 =====
+const STORAGE_KEY  = 'shukatsu_v2';
+const STORY_KEY    = 'shukatsu_stories';
+const THEME_KEY    = 'shukatsu_theme';
+const NOTIF_KEY    = 'shukatsu_notif_sent';
+const DELETED_KEY  = 'shukatsu_deleted_sources';
+
+const STAGE_FLOW = ['気になる','未応募','ES提出済','書類選考中','一次面接','二次面接','最終面接','インターン合格','内定','合格辞退','不合格','辞退'];
+const STAGE_SHORT = {
+  '気になる':'検討','未応募':'応募','ES提出済':'ES','書類選考中':'書類','一次面接':'1次','二次面接':'2次','最終面接':'最終','インターン合格':'IS合格','内定':'内定','合格辞退':'合格辞退'
+};
+const ACTIVE_STATUSES    = ['ES提出済','書類選考中','一次面接','二次面接','最終面接'];
+const INTERVIEW_STATUSES = ['一次面接','二次面接','最終面接'];
+const TERMINAL_STATUSES  = ['内定','合格辞退','不合格','辞退'];
+// 「合格した」実績としてカウントするステータス（辞退しても合格実績は残す）
+const PASSED_STATUSES    = ['インターン合格','内定','合格辞退'];
+// 合格実績として数えるか（passExcluded=true の企業は選考免除の招待参加等なので除外）
+function isPassAchievement(c) {
+  return PASSED_STATUSES.includes(c.status) && !c.passExcluded;
+}
+// タイムラインに表示する選考段階の正順（GD・三次面接はステータスには無いが面接記録から反映される）
+const TIMELINE_STAGES = ['ES提出済','書類選考中','GD','一次面接','二次面接','三次面接','最終面接'];
+const TIMELINE_STAGE_SHORT = {
+  'ES提出済':'ES','書類選考中':'書類','GD':'GD','一次面接':'1次','二次面接':'2次','三次面接':'3次','最終面接':'最終'
+};
+// 面接記録の round → タイムライン段階名
+const ROUND_TO_STAGE = {
+  'GD（グループディスカッション）':'GD',
+  '一次面接':'一次面接', '二次面接':'二次面接', '三次面接':'三次面接', '最終面接':'最終面接',
+};
+// 面接記録の round → 自動前進させるステータス（GD・三次はステータス体系に無いので前進対象外）
+const ROUND_TO_STATUS = {
+  '一次面接':'一次面接', '二次面接':'二次面接', '最終面接':'最終面接',
+};
+const STORY_CATS = ['ガクチカ','自己PR','強み','弱み','志望動機','逆質問','その他'];
+
+const INTERVIEW_TEMPLATE = [
+  { title: '企業研究（事業内容・最近のニュース・競合）', daysBefore: 7 },
+  { title: '志望動機の確認・整理',                     daysBefore: 5 },
+  { title: '想定質問リストへの回答準備',               daysBefore: 3 },
+  { title: '逆質問を3つ以上準備',                       daysBefore: 2 },
+  { title: '服装・持ち物の確認',                        daysBefore: 1 },
+  { title: '面接URL/会場の最終確認',                    daysBefore: 1 },
+];
+
+// ===== 状態 =====
+let companies        = [];
+let stories          = [];
+let deletedSourceIds = new Set();
+let editingId        = null;
+let editingESId      = null;
+let editingStoryId   = null;
+let editingTestId    = null;
+let editingInterviewId = null;
+let editingOGId      = null;
+let templateTargetId = null;
+let currentFilter    = 'all';
+let taskFilter       = 'week';
+let storyCatFilter   = 'all';
+let currentTab       = 'companies';
+let calDate          = new Date();
+let storyPickerCallback = null;
+
+// ===== ストレージ =====
+function load() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  companies = raw ? JSON.parse(raw) : [];
+  const v1 = localStorage.getItem('shukatsu_v1');
+  if (v1 && !raw) {
+    companies = JSON.parse(v1);
+    save();
+  }
+  for (const c of companies) {
+    if (!c.tasks)      c.tasks = [];
+    if (!c.es)         c.es = [];
+    if (!c.timeline)   c.timeline = [];
+    if (!c.tests)      c.tests = [];
+    if (!c.interviews) c.interviews = [];
+    if (!c.ogVisits)   c.ogVisits = [];
+    if (!c.updatedAt)  c.updatedAt = c.createdAt || new Date().toISOString();
+    // 履歴が無い既存企業は、現在ステータスの到達日として updatedAt を補完
+    if (c.timeline.length === 0 && c.status) {
+      c.timeline.push({ status: c.status, date: c.updatedAt });
+    }
+  }
+  const sRaw = localStorage.getItem(STORY_KEY);
+  stories = sRaw ? JSON.parse(sRaw) : [];
+
+  const delRaw = localStorage.getItem(DELETED_KEY);
+  deletedSourceIds = new Set(delRaw ? JSON.parse(delRaw) : []);
+}
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(companies)); }
+function saveStories() { localStorage.setItem(STORY_KEY, JSON.stringify(stories)); }
+function saveDeleted() { localStorage.setItem(DELETED_KEY, JSON.stringify([...deletedSourceIds])); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+// ===== ステータス履歴・逆行防止 =====
+// ステータス変更を c.timeline に日付付きで記録する（同一ステータスの重複記録はしない）
+function recordStatusChange(c, newStatus, dateStr) {
+  c.timeline = c.timeline || [];
+  const last = c.timeline[c.timeline.length - 1];
+  if (last && last.status === newStatus) return;
+  c.timeline.push({ status: newStatus, date: dateStr || new Date().toISOString() });
+}
+
+// Gmail同期でステータスを前進のみ許可（終了系は常に適用、終了済みからは戻さない）
+function shouldAdvanceStatus(current, next) {
+  if (!next || current === next) return false;
+  if (TERMINAL_STATUSES.includes(next)) return true;
+  if (TERMINAL_STATUSES.includes(current)) return false;
+  return STAGE_FLOW.indexOf(next) > STAGE_FLOW.indexOf(current);
+}
+
+// ===== Gmail同期データ =====
+function applyPurge() {
+  if (typeof window.gmailSyncPurge === 'undefined' || !window.gmailSyncPurge.length) return;
+  let purged = 0;
+  for (const sid of window.gmailSyncPurge) {
+    const before = companies.length;
+    companies = companies.filter(c => c.emailSourceId !== sid);
+    if (companies.length < before) purged++;
+    deletedSourceIds.add(sid);
+  }
+  if (purged > 0) {
+    save();
+    saveDeleted();
+    showToast(`${purged}件の企業を削除しました（受けない指定）`);
+  } else {
+    saveDeleted();
+  }
+}
+
+function applySyncData() {
+  if (typeof window.gmailSyncData === 'undefined' || !window.gmailSyncData.length) return;
+
+  let added = 0, updated = 0;
+  for (const item of window.gmailSyncData) {
+    if (item.emailSourceId && deletedSourceIds.has(item.emailSourceId)) continue;
+
+    if (item._mergeWith) {
+      if (item._mergeWith.emailSourceId && deletedSourceIds.has(item._mergeWith.emailSourceId)) {
+        deletedSourceIds.add(item.emailSourceId);
+        saveDeleted();
+        continue;
+      }
+      const target = companies.find(c =>
+        !c.deleted &&
+        ((item._mergeWith.emailSourceId && c.emailSourceId === item._mergeWith.emailSourceId) ||
+         (item._mergeWith.name && c.name === item._mergeWith.name))
+      );
+      if (target) {
+        if (target._appliedUpdates && target._appliedUpdates.includes(item.emailSourceId)) continue;
+
+        // ステータスは前進のみ適用（古い同期データによる逆行を防止）
+        if (item.status && shouldAdvanceStatus(target.status, item.status)) {
+          target.status = item.status;
+          recordStatusChange(target, item.status);
+        }
+        if (item.deadline) target.deadline = item.deadline;
+        if (item.priority) target.priority = item.priority;
+        if (item.industry) target.industry = item.industry;
+        if (typeof item.passExcluded === 'boolean') target.passExcluded = item.passExcluded;
+        if (item.notes) {
+          target.notes = (target.notes || '') + (target.notes ? '\n\n' : '') + `[${new Date().toLocaleDateString('ja-JP')} 同期] ` + item.notes;
+        }
+        if (item.tasks && item.tasks.length) {
+          target.tasks = target.tasks || [];
+          const existingTitles = new Set(target.tasks.map(t => t.title));
+          for (const t of item.tasks) {
+            const title = typeof t === 'string' ? t : (t.title || '');
+            if (!existingTitles.has(title)) {
+              target.tasks.push({
+                id: uid(),
+                title,
+                done: false,
+                deadline: typeof t === 'object' ? (t.deadline || '') : '',
+              });
+            }
+          }
+        }
+        target._appliedUpdates = target._appliedUpdates || [];
+        target._appliedUpdates.push(item.emailSourceId);
+        target.updatedAt = new Date().toISOString();
+        target.syncedAt  = new Date().toISOString();
+        updated++;
+        continue;
+      }
+      // マージ先の企業が見つからない場合は、削除扱いにせずスキップするだけにする。
+      // （以前はここで emailSourceId を deletedSourceIds に入れており、対象企業が
+      //   配列の下方で後から作成されるケースなどで、その更新が永久に無視される
+      //   不具合があった。中外・NEC・住友化学が更新されなかった原因。）
+      continue;
+    }
+
+    const exists = companies.some(c => c.emailSourceId && c.emailSourceId === item.emailSourceId);
+    if (exists) continue;
+
+    companies.unshift({
+      id: uid(),
+      name:     item.name     || '（企業名不明）',
+      industry: item.industry || '',
+      status:   item.status   || '未応募',
+      deadline: item.deadline || '',
+      priority: item.priority || 3,
+      notes:    item.notes    || '',
+      tasks: (item.tasks || []).map(t => ({
+        id: uid(),
+        title: typeof t === 'string' ? t : (t.title || ''),
+        done: false,
+        deadline: typeof t === 'object' ? (t.deadline || '') : '',
+      })),
+      es: [],
+      timeline: [{ status: item.status || '未応募', date: new Date().toISOString() }],
+      tests: [], interviews: [], ogVisits: [],
+      emailSourceId: item.emailSourceId || '',
+      syncedAt:  new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    added++;
+  }
+
+  if (added > 0 || updated > 0) {
+    save();
+    const msgs = [];
+    if (added > 0)   msgs.push(`${added}件追加`);
+    if (updated > 0) msgs.push(`${updated}件更新`);
+    showToast(`Gmail同期: ${msgs.join(' / ')}`);
+    document.getElementById('sync-status').textContent =
+      `最終同期: ${formatShortDateTime(new Date())}`;
+  }
+}
+
+// ===== 締切ユーティリティ =====
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(dateStr); target.setHours(0,0,0,0);
+  return Math.round((target - today) / 86400000);
+}
+function deadlineLabel(dateStr) {
+  if (!dateStr) return '';
+  const d = daysUntil(dateStr);
+  const fmt = new Date(dateStr).toLocaleDateString('ja-JP', {month:'numeric', day:'numeric'});
+  if (d < 0)   return `${fmt}（${-d}日超過）`;
+  if (d === 0) return `${fmt}（今日！）`;
+  return `${fmt}（あと${d}日）`;
+}
+function formatShortDateTime(d) {
+  return d.toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+// ===== タブ切替 =====
+function switchTab(btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  currentTab = btn.dataset.tab;
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById(`pane-${currentTab}`).classList.add('active');
+  if (currentTab === 'tasks')    renderWeeklyTasks();
+  if (currentTab === 'es')       renderES();
+  if (currentTab === 'calendar') renderCalendar();
+  if (currentTab === 'stories')  renderStories();
+  if (currentTab === 'trash')    renderTrash();
+}
+
+// ===== フィルタ・ソート =====
+function getActiveCompanies() {
+  return companies.filter(c => !c.deleted);
+}
+
+function getFilteredCompanies() {
+  let arr = getActiveCompanies();
+  if (currentFilter === 'watching')  arr = arr.filter(c => c.status === '気になる');
+  if (currentFilter === 'active')    arr = arr.filter(c => ACTIVE_STATUSES.includes(c.status));
+  if (currentFilter === 'interview') arr = arr.filter(c => INTERVIEW_STATUSES.includes(c.status));
+  if (currentFilter === 'offer')     arr = arr.filter(isPassAchievement);
+
+  const q = document.getElementById('search-box').value.trim().toLowerCase();
+  if (q) {
+    arr = arr.filter(c =>
+      c.name.toLowerCase().includes(q) ||
+      (c.industry || '').toLowerCase().includes(q)
+    );
+  }
+
+  const sortBy = document.getElementById('sort-select').value;
+  arr = [...arr].sort((a,b) => {
+    if (sortBy === 'deadline') {
+      const da = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+      const db = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+      return da - db;
+    }
+    if (sortBy === 'priority') return a.priority - b.priority;
+    if (sortBy === 'name')     return a.name.localeCompare(b.name, 'ja');
+    if (sortBy === 'status')      return STAGE_FLOW.indexOf(a.status) - STAGE_FLOW.indexOf(b.status);
+    if (sortBy === 'status-desc') return STAGE_FLOW.indexOf(b.status) - STAGE_FLOW.indexOf(a.status);
+    return (b.updatedAt || '').localeCompare(a.updatedAt || '');
+  });
+  return arr;
+}
+
+// ===== 描画：企業 =====
+function renderStats() {
+  const live = getActiveCompanies();
+  const total     = live.length;
+  const watching  = live.filter(c => c.status === '気になる').length;
+  const active    = live.filter(c => ACTIVE_STATUSES.includes(c.status)).length;
+  const interview = live.filter(c => INTERVIEW_STATUSES.includes(c.status)).length;
+  const offer     = live.filter(isPassAchievement).length;
+  const tasksDue  = live.flatMap(c => c.tasks || []).filter(t => !t.done && t.deadline && daysUntil(t.deadline) <= 7).length;
+  const trashCount = companies.filter(c => c.deleted).length;
+  document.getElementById('tab-count-trash').textContent = trashCount > 0 ? `(${trashCount})` : '';
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card"><div class="num">${total}</div><div class="label">企業数</div></div>
+    <div class="stat-card"><div class="num" style="color:#b8651b">${watching}</div><div class="label">気になる</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--primary)">${active}</div><div class="label">選考中</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--warning)">${interview}</div><div class="label">面接</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--success)">${offer}</div><div class="label">合格実績</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--danger)">${tasksDue}</div><div class="label">7日以内タスク</div></div>
+  `;
+
+  document.getElementById('tab-count-companies').textContent = `(${total})`;
+  const overdue = live.flatMap(c => c.tasks || []).filter(t => !t.done && t.deadline && daysUntil(t.deadline) <= 0).length;
+  const badge = document.getElementById('tab-badge-tasks');
+  if (overdue > 0) { badge.textContent = overdue; badge.style.display = 'inline-block'; }
+  else             { badge.style.display = 'none'; }
+}
+
+function renderTimeline(c) {
+  // 選考開始前はタイムラインを表示しない
+  if (c.status === '気になる' || c.status === '未応募') {
+    return '<p style="font-size:13px;color:var(--text-faint);padding:4px 0;">選考開始前（ES未提出）</p>';
+  }
+
+  // 段階ごとの到達日を収集（ステータス履歴を優先、面接記録の日付で補完）
+  const stageDates = {};
+  for (const h of (c.timeline || [])) {
+    if (TIMELINE_STAGES.includes(h.status) && !(h.status in stageDates)) stageDates[h.status] = h.date;
+  }
+  for (const iv of (c.interviews || [])) {
+    const s = ROUND_TO_STAGE[iv.round];
+    if (s && iv.date && !(s in stageDates)) stageDates[s] = iv.date;
+  }
+
+  // この企業が実際に通った段階だけを正順で表示
+  const stagesSet = new Set(Object.keys(stageDates));
+  if (TIMELINE_STAGES.includes(c.status)) stagesSet.add(c.status);
+  for (const iv of (c.interviews || [])) {
+    const s = ROUND_TO_STAGE[iv.round];
+    if (s) stagesSet.add(s);
+  }
+  if (stagesSet.size === 0) stagesSet.add('ES提出済');
+  const stages = TIMELINE_STAGES.filter(s => stagesSet.has(s));
+
+  const isTerminal = TERMINAL_STATUSES.includes(c.status);
+  const isInternPass = c.status === 'インターン合格';
+  const isSettled  = isTerminal || isInternPass; // 途中段階をすべて✓にする状態
+  const statusIdx  = stages.indexOf(c.status);
+  const fmtD = ds => {
+    if (!ds) return '';
+    const d = new Date(ds);
+    return isNaN(d) ? '' : d.toLocaleDateString('ja-JP', {month:'numeric', day:'numeric'});
+  };
+
+  let html = stages.map((s, i) => {
+    const isCurrent = !isSettled && i === statusIdx;
+    const isDone    = !isCurrent && (isSettled || (s in stageDates) || (statusIdx >= 0 && i < statusIdx));
+    return `
+      ${i > 0 ? `<div class="timeline-line ${isDone || isCurrent ? 'done' : ''}"></div>` : ''}
+      <div class="timeline-step">
+        <div class="timeline-dot ${isDone ? 'done' : ''} ${isCurrent ? 'current' : ''}" title="${s}">${isDone ? '✓' : i+1}</div>
+        <span class="timeline-label">${TIMELINE_STAGE_SHORT[s] || s}</span>
+        <span class="timeline-date">${fmtD(stageDates[s])}</span>
+      </div>`;
+  }).join('');
+
+  // 終端ノード（内定/不合格/辞退）
+  if (isTerminal) {
+    const termEntry = (c.timeline || []).find(h => h.status === c.status);
+    const cls  = (c.status === '内定' || c.status === '合格辞退') ? 'offer' : c.status === '不合格' ? 'fail' : 'withdrawn';
+    const mark = (c.status === '内定' || c.status === '合格辞退') ? '✓' : c.status === '不合格' ? '✗' : '−';
+    html += `
+      <div class="timeline-line done"></div>
+      <div class="timeline-step">
+        <div class="timeline-dot ${cls}" title="${c.status}">${mark}</div>
+        <span class="timeline-label">${c.status}</span>
+        <span class="timeline-date">${fmtD(termEntry && termEntry.date)}</span>
+      </div>`;
+  }
+
+  // インターン合格ノード（緑✓・参加確定。本選考が始まればさらに先へ進める）
+  if (isInternPass) {
+    const passEntry = (c.timeline || []).find(h => h.status === 'インターン合格');
+    html += `
+      <div class="timeline-line done"></div>
+      <div class="timeline-step">
+        <div class="timeline-dot offer" title="インターン合格（参加確定）">🎉</div>
+        <span class="timeline-label">IS合格</span>
+        <span class="timeline-date">${fmtD(passEntry && passEntry.date)}</span>
+      </div>`;
+  }
+
+  return `<div class="timeline">${html}</div>`;
+}
+
+function renderTasks(c) {
+  if (!c.tasks || c.tasks.length === 0)
+    return '<p style="font-size:13px;color:var(--text-faint);padding:4px 0;">タスクなし</p>';
+  return c.tasks.map(t => {
+    const dl = t.deadline ? daysUntil(t.deadline) : null;
+    const urgent = dl !== null && dl <= 3;
+    return `
+    <div class="task-item">
+      <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask('${c.id}','${t.id}')">
+      <span class="task-title ${t.done ? 'done' : ''}">${esc(t.title)}</span>
+      ${t.deadline ? `<span class="task-deadline ${urgent && !t.done ? 'urgent' : ''}">${deadlineLabel(t.deadline)}</span>` : ''}
+      <span class="task-delete" onclick="deleteTask('${c.id}','${t.id}')">×</span>
+    </div>`;
+  }).join('');
+}
+
+function renderTests(c) {
+  if (!c.tests || c.tests.length === 0) return '<p style="font-size:13px;color:var(--text-faint);">登録なし</p>';
+  return c.tests.map(t => `
+    <div class="sub-card">
+      <div class="sub-card-head">
+        <span class="sub-card-title">${esc(t.type)}</span>
+        <span class="status-badge test-status-${t.status}">${t.status}</span>
+        <div class="sub-card-actions">
+          <button class="ic-btn" onclick="editTest('${c.id}','${t.id}')">✎</button>
+          <button class="ic-btn del" onclick="deleteTest('${c.id}','${t.id}')">×</button>
+        </div>
+      </div>
+      <div class="sub-card-meta">
+        ${t.deadline ? `<span>📅 ${deadlineLabel(t.deadline)}</span>` : ''}
+        ${t.score ? `<span>🏆 ${esc(t.score)}</span>` : ''}
+      </div>
+      ${t.notes ? `<div style="font-size:12px;margin-top:4px;color:var(--text-muted);">${esc(t.notes)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function renderInterviews(c) {
+  if (!c.interviews || c.interviews.length === 0) return '<p style="font-size:13px;color:var(--text-faint);">記録なし</p>';
+  return c.interviews.map(i => `
+    <div class="sub-card">
+      <div class="sub-card-head">
+        <span class="sub-card-title">🎤 ${esc(i.round)}</span>
+        <span style="font-size:11px;color:var(--text-muted);">${i.format || ''}${i.date ? ' / ' + i.date : ''}</span>
+        <div class="sub-card-actions">
+          <button class="ic-btn" onclick="editInterview('${c.id}','${i.id}')">✎</button>
+          <button class="ic-btn del" onclick="deleteInterview('${c.id}','${i.id}')">×</button>
+        </div>
+      </div>
+      ${i.interviewer ? `<div style="font-size:12px;color:var(--text-muted);">👤 ${esc(i.interviewer)}</div>` : ''}
+      ${i.questions ? `<div style="font-size:12px;margin-top:4px;"><b>聞かれた：</b><br>${esc(i.questions).replace(/\n/g,'<br>')}</div>` : ''}
+      ${i.answers ? `<div style="font-size:12px;margin-top:4px;"><b>回答：</b><br>${esc(i.answers).replace(/\n/g,'<br>')}</div>` : ''}
+      ${i.impression ? `<div style="font-size:12px;margin-top:4px;color:var(--text-muted);font-style:italic;">💭 ${esc(i.impression)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function renderOGs(c) {
+  if (!c.ogVisits || c.ogVisits.length === 0) return '<p style="font-size:13px;color:var(--text-faint);">登録なし</p>';
+  return c.ogVisits.map(o => `
+    <div class="sub-card">
+      <div class="sub-card-head">
+        <span class="sub-card-title">👥 ${esc(o.name)}</span>
+        ${o.followUpDone ? '<span class="status-badge status-内定">お礼済</span>' : '<span class="status-badge status-未応募">お礼未</span>'}
+        <div class="sub-card-actions">
+          <button class="ic-btn" onclick="editOG('${c.id}','${o.id}')">✎</button>
+          <button class="ic-btn del" onclick="deleteOG('${c.id}','${o.id}')">×</button>
+        </div>
+      </div>
+      <div class="sub-card-meta">
+        ${o.position ? `<span>${esc(o.position)}</span>` : ''}
+        ${o.date ? `<span>📅 ${o.date}</span>` : ''}
+      </div>
+      ${o.notes ? `<div style="font-size:12px;margin-top:4px;color:var(--text-muted);white-space:pre-wrap;">${esc(o.notes)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function renderList() {
+  const list = document.getElementById('company-list');
+  const arr  = getFilteredCompanies();
+
+  if (arr.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">📋</div>
+      <p>該当する企業がありません<br>「＋ 企業を追加」または「Gmail同期」で追加してください</p></div>`;
+    return;
+  }
+
+  // ステータス順ソート時はステータスごとに見出しを挟んでグループ表示
+  const groupByStatus = ['status','status-desc'].includes(document.getElementById('sort-select').value);
+  let prevStatus = null;
+
+  list.innerHTML = arr.map(c => {
+    const dl = daysUntil(c.deadline);
+    const urgent = dl !== null && dl <= 3;
+    const todoNum = (c.tasks || []).filter(t => !t.done).length;
+    const gmailBadge = c.syncedAt ? '<span class="sync-badge">Gmail</span>' : '';
+
+    let groupHeader = '';
+    if (groupByStatus && c.status !== prevStatus) {
+      prevStatus = c.status;
+      const count = arr.filter(x => x.status === c.status).length;
+      groupHeader = `
+      <div class="status-group-header">
+        <span class="status-badge status-${c.status}">${c.status}</span>
+        <span class="status-group-count">${count}社</span>
+        <div class="status-group-line"></div>
+      </div>`;
+    }
+
+    return groupHeader + `
+    <div class="company-card">
+      <div class="company-header" onclick="toggleDetail('${c.id}')">
+        <div class="priority-dot priority-${c.priority}"></div>
+        <div style="flex:1;min-width:0;">
+          <div class="company-name">${esc(c.name)}${gmailBadge}</div>
+          ${c.industry ? `<div class="company-industry">${esc(c.industry)}</div>` : ''}
+        </div>
+        ${todoNum > 0 ? `<span style="font-size:12px;color:var(--danger);margin-right:6px;">タスク${todoNum}</span>` : ''}
+        <span class="status-badge status-${c.status}">${c.status}</span>
+        ${c.deadline ? `<span class="deadline-chip ${urgent ? '' : 'ok'}">${deadlineLabel(c.deadline)}</span>` : ''}
+        <span class="expand-icon" id="icon-${c.id}">▶</span>
+      </div>
+
+      <div class="company-detail" id="detail-${c.id}">
+        <div class="detail-section">
+          <h4>選考タイムライン</h4>
+          ${renderTimeline(c)}
+        </div>
+
+        <div class="detail-section">
+          <h4>タスク (${todoNum}件未完了)</h4>
+          <div id="tasks-${c.id}">${renderTasks(c)}</div>
+          <div class="add-task-form">
+            <input type="text" id="nt-title-${c.id}" placeholder="タスクを追加..."
+              onkeydown="if(event.key==='Enter')addTask('${c.id}')">
+            <input type="date" id="nt-date-${c.id}">
+            <button class="btn-small" onclick="addTask('${c.id}')">追加</button>
+          </div>
+          <button class="btn-secondary" onclick="openTemplateModal('${c.id}')" style="margin-top:8px;">📋 面接準備テンプレを追加</button>
+        </div>
+
+        <div class="detail-section">
+          <h4>🧪 WEBテスト・適性検査</h4>
+          <div id="tests-${c.id}">${renderTests(c)}</div>
+          <button class="btn-secondary" onclick="openTestModal('${c.id}')" style="margin-top:8px;">＋ テストを追加</button>
+        </div>
+
+        <div class="detail-section">
+          <h4>🎤 面接記録</h4>
+          <div id="interviews-${c.id}">${renderInterviews(c)}</div>
+          <button class="btn-secondary" onclick="openInterviewModal('${c.id}')" style="margin-top:8px;">＋ 面接記録を追加</button>
+        </div>
+
+        <div class="detail-section">
+          <h4>👥 OB/OG訪問</h4>
+          <div id="ogs-${c.id}">${renderOGs(c)}</div>
+          <button class="btn-secondary" onclick="openOGModal('${c.id}')" style="margin-top:8px;">＋ OB/OG訪問を追加</button>
+        </div>
+
+        <div class="detail-section notes-section">
+          <h4>メモ</h4>
+          <textarea id="notes-${c.id}" onblur="saveNotes('${c.id}')" placeholder="面接メモ、感想など...">${esc(c.notes || '')}</textarea>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn-danger" onclick="deleteCompany('${c.id}')">削除</button>
+          <button class="btn-edit" onclick="openEditModal('${c.id}')">編集</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderTrash() {
+  const host = document.getElementById('trash-list');
+  const trashed = companies.filter(c => c.deleted)
+    .sort((a,b) => (b.deletedAt || '').localeCompare(a.deletedAt || ''));
+
+  if (trashed.length === 0) {
+    host.innerHTML = `<div class="empty-state"><div class="icon">🗑</div>
+      <p>削除済みの企業はありません</p></div>`;
+    return;
+  }
+
+  host.innerHTML = trashed.map(c => {
+    const deletedDate = c.deletedAt ? new Date(c.deletedAt).toLocaleDateString('ja-JP') : '不明';
+    const gmailBadge = c.syncedAt ? '<span class="sync-badge">Gmail</span>' : '';
+    return `
+    <div class="company-card" style="opacity:0.7;">
+      <div class="company-header" style="cursor:default;">
+        <div class="priority-dot priority-${c.priority}"></div>
+        <div style="flex:1;min-width:0;">
+          <div class="company-name">${esc(c.name)}${gmailBadge}</div>
+          ${c.industry ? `<div class="company-industry">${esc(c.industry)}</div>` : ''}
+          <div style="font-size:11px;color:var(--text-faint);margin-top:2px;">🗑 削除日: ${deletedDate}</div>
+        </div>
+        <span class="status-badge status-${c.status}">${c.status}</span>
+        <button class="btn-secondary" onclick="restoreCompany('${c.id}')">↩ 復元</button>
+        <button class="btn-danger" onclick="permanentlyDeleteCompany('${c.id}')">完全削除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function render() {
+  renderStats();
+  renderList();
+  if (currentTab === 'tasks')    renderWeeklyTasks();
+  if (currentTab === 'es')       renderES();
+  if (currentTab === 'calendar') renderCalendar();
+  if (currentTab === 'stories')  renderStories();
+  if (currentTab === 'trash')    renderTrash();
+}
+
+// ===== 描画：今週のタスク =====
+function completeAllOverdue() {
+  let count = 0;
+  for (const c of getActiveCompanies()) {
+    for (const t of (c.tasks || [])) {
+      if (!t.done && t.deadline && daysUntil(t.deadline) < 0) count++;
+    }
+  }
+  if (count === 0) return;
+  if (!confirm(`期限切れタスク ${count}件をすべて完了にしますか？`)) return;
+  for (const c of getActiveCompanies()) {
+    let touched = false;
+    for (const t of (c.tasks || [])) {
+      if (!t.done && t.deadline && daysUntil(t.deadline) < 0) {
+        t.done = true;
+        touched = true;
+      }
+    }
+    if (touched) c.updatedAt = new Date().toISOString();
+  }
+  save();
+  render();
+  showToast(`${count}件のタスクを完了にしました`);
+}
+
+function setTaskFilter(btn) {
+  document.querySelectorAll('[data-task-filter]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  taskFilter = btn.dataset.taskFilter;
+  renderWeeklyTasks();
+}
+
+function renderWeeklyTasks() {
+  const host = document.getElementById('weekly-tasks');
+  const all = [];
+  for (const c of getActiveCompanies()) {
+    for (const t of (c.tasks || [])) {
+      if (t.done) continue;
+      all.push({ ...t, companyId: c.id, companyName: c.name });
+    }
+  }
+
+  let filtered = all;
+  if (taskFilter === 'week') {
+    filtered = all.filter(t => t.deadline && daysUntil(t.deadline) <= 7);
+  } else if (taskFilter === 'overdue') {
+    filtered = all.filter(t => t.deadline && daysUntil(t.deadline) < 0);
+  }
+
+  if (filtered.length === 0) {
+    host.innerHTML = `<div class="empty-state"><div class="icon">✨</div>
+      <p>${taskFilter === 'overdue' ? '期限切れタスクなし。順調です！' : '該当タスクなし'}</p></div>`;
+    return;
+  }
+
+  // 期限切れフィルタ時：一括完了ボタン
+  let bulkBtn = '';
+  if (taskFilter === 'overdue') {
+    bulkBtn = `
+      <div style="margin-bottom:12px;">
+        <button class="btn-secondary" onclick="completeAllOverdue()">✓ 表示中の期限切れタスク ${filtered.length}件をすべて完了にする</button>
+      </div>`;
+  }
+
+  const groups = {};
+  for (const t of filtered) {
+    const key = t.deadline || 'no-date';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(t);
+  }
+  const sortedKeys = Object.keys(groups).sort();
+
+  host.innerHTML = bulkBtn + sortedKeys.map(key => {
+    const tasks = groups[key];
+    const d = key === 'no-date' ? null : daysUntil(key);
+    let label, cls = '';
+    if (key === 'no-date') label = '期限なし';
+    else if (d < 0)   { label = `期限切れ（${new Date(key).toLocaleDateString('ja-JP')}）`; cls = 'overdue'; }
+    else if (d === 0) { label = `今日（${new Date(key).toLocaleDateString('ja-JP')}）`; cls = 'today'; }
+    else if (d === 1) label = `明日（${new Date(key).toLocaleDateString('ja-JP')}）`;
+    else label = `${new Date(key).toLocaleDateString('ja-JP', {month:'long', day:'numeric', weekday:'short'})}（あと${d}日）`;
+
+    return `
+      <div class="day-section">
+        <div class="day-header ${cls}">${label}</div>
+        ${tasks.map(t => `
+          <div class="task-row">
+            <input type="checkbox" onchange="toggleTask('${t.companyId}','${t.id}')">
+            <span style="flex:1;">${esc(t.title)}</span>
+            <span class="task-company">${esc(t.companyName)}</span>
+          </div>
+        `).join('')}
+      </div>`;
+  }).join('');
+}
+
+// ===== 描画：カレンダー =====
+function changeMonth(delta) {
+  calDate = new Date(calDate.getFullYear(), calDate.getMonth() + delta, 1);
+  renderCalendar();
+}
+function goToday() { calDate = new Date(); renderCalendar(); }
+
+function getCalendarItems() {
+  // 日付ごとに { type, title, company, color } を集める
+  const map = {};
+  const add = (date, item) => {
+    if (!date) return;
+    const key = date.length > 10 ? date.slice(0,10) : date;
+    if (!map[key]) map[key] = [];
+    map[key].push(item);
+  };
+  for (const c of getActiveCompanies()) {
+    if (c.deadline) add(c.deadline, { type:'deadline', label:`🚩 ${c.name}`, companyId: c.id, kind:'企業締切', detail: c.status });
+    for (const t of (c.tasks || [])) {
+      if (t.deadline && !t.done) add(t.deadline, { type:'task', label:`✔ ${t.title}`, companyId: c.id, companyName: c.name, kind:'タスク', detail: c.name });
+    }
+    for (const i of (c.interviews || [])) {
+      if (i.date) add(i.date, { type:'interview', label:`🎤 ${c.name} ${i.round}`, companyId: c.id, kind:'面接', detail: `${c.name} / ${i.round}` });
+    }
+    for (const tst of (c.tests || [])) {
+      if (tst.deadline) add(tst.deadline, { type:'test', label:`📝 ${tst.type} (${c.name})`, companyId: c.id, kind:'テスト', detail: `${c.name} / ${tst.type} ${tst.status}` });
+    }
+  }
+  return map;
+}
+
+function renderCalendar() {
+  const grid = document.getElementById('cal-grid');
+  const title = document.getElementById('cal-title');
+  const y = calDate.getFullYear(), m = calDate.getMonth();
+  title.textContent = `${y}年${m+1}月`;
+
+  const items = getCalendarItems();
+
+  // 曜日ヘッダ
+  const dows = ['日','月','火','水','木','金','土'];
+  let html = dows.map((d,i) => `<div class="cal-dow ${i===0?'sun':''} ${i===6?'sat':''}">${d}</div>`).join('');
+
+  // 月初の曜日と前月末
+  const firstDow = new Date(y, m, 1).getDay();
+  const lastDate = new Date(y, m+1, 0).getDate();
+  const prevLastDate = new Date(y, m, 0).getDate();
+  const totalCells = Math.ceil((firstDow + lastDate) / 7) * 7;
+
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  for (let i = 0; i < totalCells; i++) {
+    let cellY = y, cellM = m, cellD;
+    let otherMonth = false;
+    if (i < firstDow) {
+      cellD = prevLastDate - firstDow + i + 1;
+      cellM = m - 1;
+      if (cellM < 0) { cellM = 11; cellY = y - 1; }
+      otherMonth = true;
+    } else if (i >= firstDow + lastDate) {
+      cellD = i - firstDow - lastDate + 1;
+      cellM = m + 1;
+      if (cellM > 11) { cellM = 0; cellY = y + 1; }
+      otherMonth = true;
+    } else {
+      cellD = i - firstDow + 1;
+    }
+    const key = `${cellY}-${String(cellM+1).padStart(2,'0')}-${String(cellD).padStart(2,'0')}`;
+    const dow = i % 7;
+    const isToday = key === todayKey;
+    const its = items[key] || [];
+
+    let itemHtml = '';
+    const show = its.slice(0, 3);
+    for (const it of show) {
+      itemHtml += `<div class="cal-item ${it.type}" title="${esc(it.label)}">${esc(it.label)}</div>`;
+    }
+    if (its.length > 3) itemHtml += `<div class="cal-more">+${its.length - 3}件</div>`;
+
+    html += `
+      <div class="cal-day ${otherMonth?'other-month':''} ${isToday?'today':''}" onclick="showCalDetail('${key}')">
+        <div class="cal-date ${dow===0?'sun':''} ${dow===6?'sat':''}">${cellD}</div>
+        ${itemHtml}
+      </div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function showCalDetail(key) {
+  const items = getCalendarItems();
+  const its = items[key] || [];
+  document.getElementById('cal-detail-title').textContent =
+    new Date(key).toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric', weekday:'short'});
+
+  const content = document.getElementById('cal-detail-content');
+  if (its.length === 0) {
+    content.innerHTML = '<p style="color:var(--text-faint);">この日は予定がありません</p>';
+  } else {
+    content.innerHTML = its.map(it => `
+      <div class="sub-card">
+        <div class="sub-card-head">
+          <span class="sub-card-title">${esc(it.label)}</span>
+          <span class="status-badge" style="background:var(--bg-subtle);color:var(--text-muted);">${it.kind}</span>
+        </div>
+        ${it.detail ? `<div style="font-size:12px;color:var(--text-muted);">${esc(it.detail)}</div>` : ''}
+      </div>
+    `).join('');
+  }
+  document.getElementById('cal-detail-modal').classList.add('open');
+}
+function closeCalDetail() { document.getElementById('cal-detail-modal').classList.remove('open'); }
+
+// ===== 描画：ES =====
+function renderES() {
+  const select = document.getElementById('es-company-select');
+  const currentVal = select.value;
+  const live = getActiveCompanies();
+  select.innerHTML = '<option value="">-- 全企業 --</option>' +
+    live.map(c => `<option value="${c.id}">${esc(c.name)} (${(c.es||[]).length}件)</option>`).join('');
+  if (currentVal && live.some(c => c.id === currentVal)) select.value = currentVal;
+
+  const host = document.getElementById('es-list');
+  const filterId = select.value;
+  let items = [];
+  for (const c of live) {
+    if (filterId && c.id !== filterId) continue;
+    for (const e of (c.es || [])) {
+      items.push({ ...e, companyId: c.id, companyName: c.name });
+    }
+  }
+
+  if (items.length === 0) {
+    host.innerHTML = `<div class="empty-state"><div class="icon">📝</div>
+      <p>ESがまだありません<br>「＋ ESを追加」から設問と回答を管理できます</p></div>`;
+    return;
+  }
+
+  host.innerHTML = items.map(e => {
+    const len = (e.answer || '').length;
+    const over = e.charLimit && len > e.charLimit;
+    return `
+    <div class="es-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">
+        <span class="task-company">${esc(e.companyName)}</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-secondary" onclick="editES('${e.companyId}','${e.id}')">編集</button>
+          <button class="btn-danger" onclick="deleteES('${e.companyId}','${e.id}')">削除</button>
+        </div>
+      </div>
+      <div class="es-question">${esc(e.question)}</div>
+      <textarea class="es-answer" id="es-ans-${e.id}"
+        oninput="updateESAnswer('${e.companyId}','${e.id}', this.value)"
+        placeholder="回答を入力...">${esc(e.answer || '')}</textarea>
+      <div class="es-meta">
+        <span class="char-count ${over ? 'over' : ''}" id="es-cc-${e.id}">${len}文字${e.charLimit ? ` / ${e.charLimit}文字` : ''}</span>
+        <span>${e.deadline ? `締切: ${e.deadline}` : ''}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateESAnswer(companyId, esId, value) {
+  const c = companies.find(x => x.id === companyId);
+  if (!c) return;
+  const e = c.es.find(x => x.id === esId);
+  if (!e) return;
+  e.answer = value;
+  c.updatedAt = new Date().toISOString();
+  save();
+  const cc = document.getElementById(`es-cc-${esId}`);
+  if (cc) {
+    const len = value.length;
+    const over = e.charLimit && len > e.charLimit;
+    cc.textContent = `${len}文字${e.charLimit ? ` / ${e.charLimit}文字` : ''}`;
+    cc.classList.toggle('over', !!over);
+  }
+}
+
+function openESModal() {
+  editingESId = null;
+  document.getElementById('es-modal-title').textContent = 'ESを追加';
+  const sel = document.getElementById('es-f-company');
+  const live = getActiveCompanies();
+  sel.innerHTML = live.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  if (live.length === 0) { showToast('先に企業を追加してください'); return; }
+  document.getElementById('es-f-question').value = '';
+  document.getElementById('es-f-limit').value    = '';
+  document.getElementById('es-f-deadline').value = '';
+  document.getElementById('es-f-answer').value   = '';
+  document.getElementById('es-modal').classList.add('open');
+}
+function editES(companyId, esId) {
+  const c = companies.find(x => x.id === companyId);
+  const e = c.es.find(x => x.id === esId);
+  editingESId = { companyId, esId };
+  document.getElementById('es-modal-title').textContent = 'ESを編集';
+  const sel = document.getElementById('es-f-company');
+  sel.innerHTML = getActiveCompanies().map(c2 => `<option value="${c2.id}">${esc(c2.name)}</option>`).join('');
+  sel.value = companyId;
+  document.getElementById('es-f-question').value = e.question;
+  document.getElementById('es-f-limit').value    = e.charLimit || '';
+  document.getElementById('es-f-deadline').value = e.deadline || '';
+  document.getElementById('es-f-answer').value   = e.answer || '';
+  document.getElementById('es-modal').classList.add('open');
+}
+function closeESModal() { document.getElementById('es-modal').classList.remove('open'); }
+function saveES() {
+  const cid = document.getElementById('es-f-company').value;
+  const q   = document.getElementById('es-f-question').value.trim();
+  if (!cid || !q) { alert('企業と設問は必須です'); return; }
+  const c = companies.find(x => x.id === cid);
+  const data = {
+    question: q,
+    charLimit: parseInt(document.getElementById('es-f-limit').value) || null,
+    deadline:  document.getElementById('es-f-deadline').value,
+    answer:    document.getElementById('es-f-answer').value,
+  };
+  if (editingESId) {
+    const oldC = companies.find(x => x.id === editingESId.companyId);
+    const oldE = oldC.es.find(x => x.id === editingESId.esId);
+    if (editingESId.companyId !== cid) {
+      oldC.es = oldC.es.filter(x => x.id !== editingESId.esId);
+      c.es = c.es || [];
+      c.es.push({ id: uid(), ...data });
+    } else {
+      Object.assign(oldE, data);
+    }
+  } else {
+    c.es = c.es || [];
+    c.es.push({ id: uid(), ...data });
+    // 選考開始前の企業にESを登録した場合、ステータス前進を提案（下書き登録の可能性があるため確認制）
+    if ((c.status === '気になる' || c.status === '未応募') &&
+        confirm(`「${c.name}」のステータスを「ES提出済」にしますか？\n（まだ提出していない下書きの場合は「キャンセル」）`)) {
+      c.status = 'ES提出済';
+      recordStatusChange(c, 'ES提出済');
+    }
+  }
+  c.updatedAt = new Date().toISOString();
+  save();
+  closeESModal();
+  render();
+  showToast(editingESId ? 'ESを更新しました' : 'ESを追加しました');
+}
+function deleteES(companyId, esId) {
+  if (!confirm('このESを削除しますか？')) return;
+  const c = companies.find(x => x.id === companyId);
+  c.es = c.es.filter(x => x.id !== esId);
+  save();
+  renderES();
+}
+
+// ===== ストーリーバンク =====
+function setStoryCat(btn) {
+  document.querySelectorAll('[data-story-cat]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  storyCatFilter = btn.dataset.storyCat;
+  renderStories();
+}
+
+function renderStories() {
+  const host = document.getElementById('story-list');
+  let items = stories;
+  if (storyCatFilter !== 'all') items = items.filter(s => s.category === storyCatFilter);
+
+  if (items.length === 0) {
+    host.innerHTML = `<div class="empty-state"><div class="icon">📚</div>
+      <p>ストーリーがまだありません<br>「＋ ストーリーを追加」で自己PR・ガクチカなどを登録できます<br><span style="font-size:12px;">ES画面から「📚 ストーリーから引用」で使い回せます</span></p></div>`;
+    return;
+  }
+
+  host.innerHTML = items.map(s => {
+    const len = (s.content || '').length;
+    const usedCount = (s.usedIn || []).length;
+    return `
+      <div class="story-card cat-${s.category}">
+        <div class="story-head">
+          <span class="story-cat">${esc(s.category)}</span>
+          <span class="story-title">${esc(s.title)}</span>
+        </div>
+        <div class="story-content" onclick="this.parentElement.classList.toggle('expanded')">${esc(s.content || '')}</div>
+        <div class="story-meta">
+          <span>${len}文字</span>
+          <span>使用 ${usedCount}社</span>
+          ${s.tags && s.tags.length ? `<span>🏷 ${s.tags.map(esc).join(', ')}</span>` : ''}
+        </div>
+        <div class="story-actions">
+          <button class="btn-secondary" onclick="editStory('${s.id}')">編集</button>
+          <button class="btn-secondary" onclick="copyStoryContent('${s.id}')">コピー</button>
+          <button class="btn-danger" onclick="deleteStory('${s.id}')">削除</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function openStoryModal() {
+  editingStoryId = null;
+  document.getElementById('story-modal-title').textContent = 'ストーリーを追加';
+  document.getElementById('story-f-cat').value     = storyCatFilter !== 'all' ? storyCatFilter : 'ガクチカ';
+  document.getElementById('story-f-title').value   = '';
+  document.getElementById('story-f-content').value = '';
+  document.getElementById('story-f-tags').value    = '';
+  document.getElementById('story-char').textContent = '0文字';
+  document.getElementById('story-modal').classList.add('open');
+  setTimeout(() => document.getElementById('story-f-title').focus(), 100);
+}
+function editStory(id) {
+  const s = stories.find(x => x.id === id);
+  if (!s) return;
+  editingStoryId = id;
+  document.getElementById('story-modal-title').textContent = 'ストーリーを編集';
+  document.getElementById('story-f-cat').value     = s.category;
+  document.getElementById('story-f-title').value   = s.title;
+  document.getElementById('story-f-content').value = s.content || '';
+  document.getElementById('story-f-tags').value    = (s.tags || []).join(', ');
+  document.getElementById('story-char').textContent = `${(s.content || '').length}文字`;
+  document.getElementById('story-modal').classList.add('open');
+}
+function closeStoryModal() { document.getElementById('story-modal').classList.remove('open'); }
+function saveStory() {
+  const cat   = document.getElementById('story-f-cat').value;
+  const title = document.getElementById('story-f-title').value.trim();
+  if (!title) { alert('タイトルを入力してください'); return; }
+  const data = {
+    category: cat,
+    title,
+    content: document.getElementById('story-f-content').value,
+    tags: document.getElementById('story-f-tags').value.split(',').map(t => t.trim()).filter(Boolean),
+    updatedAt: new Date().toISOString(),
+  };
+  if (editingStoryId) {
+    const s = stories.find(x => x.id === editingStoryId);
+    Object.assign(s, data);
+  } else {
+    stories.unshift({ id: uid(), ...data, usedIn: [], createdAt: new Date().toISOString() });
+  }
+  saveStories();
+  closeStoryModal();
+  renderStories();
+  showToast(editingStoryId ? 'ストーリーを更新しました' : 'ストーリーを追加しました');
+}
+function deleteStory(id) {
+  if (!confirm('このストーリーを削除しますか？')) return;
+  stories = stories.filter(s => s.id !== id);
+  saveStories();
+  renderStories();
+}
+function copyStoryContent(id) {
+  const s = stories.find(x => x.id === id);
+  if (!s) return;
+  navigator.clipboard.writeText(s.content || '').then(() => showToast('クリップボードにコピーしました'));
+}
+
+// 文字数カウンタ
+document.addEventListener('input', e => {
+  if (e.target && e.target.id === 'story-f-content') {
+    const len = e.target.value.length;
+    document.getElementById('story-char').textContent = `${len}文字`;
+  }
+});
+
+// ストーリーピッカー（ES画面からの引用）
+function openStoryPickerForES() {
+  storyPickerCallback = (s) => {
+    const txt = document.getElementById('es-f-answer');
+    const current = txt.value;
+    txt.value = current ? current + '\n\n' + s.content : s.content;
+    // 引用記録
+    closeStoryPicker();
+  };
+  document.getElementById('picker-cat').value = 'all';
+  renderStoryPicker();
+  document.getElementById('story-picker').classList.add('open');
+}
+
+function renderStoryPicker() {
+  const cat = document.getElementById('picker-cat').value;
+  let items = stories;
+  if (cat !== 'all') items = items.filter(s => s.category === cat);
+
+  const host = document.getElementById('picker-list');
+  if (items.length === 0) {
+    host.innerHTML = '<p style="color:var(--text-faint);text-align:center;padding:20px;">登録されたストーリーがありません</p>';
+    return;
+  }
+  host.innerHTML = items.map(s => `
+    <div class="story-card cat-${s.category}" style="cursor:pointer;" onclick="pickStory('${s.id}')">
+      <div class="story-head">
+        <span class="story-cat">${esc(s.category)}</span>
+        <span class="story-title">${esc(s.title)}</span>
+      </div>
+      <div class="story-content">${esc(s.content || '')}</div>
+      <div class="story-meta"><span>${(s.content || '').length}文字</span></div>
+    </div>
+  `).join('');
+}
+
+function pickStory(id) {
+  const s = stories.find(x => x.id === id);
+  if (!s || !storyPickerCallback) return;
+  storyPickerCallback(s);
+}
+
+function closeStoryPicker() {
+  document.getElementById('story-picker').classList.remove('open');
+  storyPickerCallback = null;
+}
+
+// ===== WEBテスト =====
+function openTestModal(companyId) {
+  editingTestId = null;
+  document.getElementById('test-modal-title').textContent = 'WEBテストを追加';
+  document.getElementById('test-f-company-id').value = companyId;
+  document.getElementById('test-f-type').value     = 'SPI';
+  document.getElementById('test-f-status').value   = '未受験';
+  document.getElementById('test-f-deadline').value = '';
+  document.getElementById('test-f-score').value    = '';
+  document.getElementById('test-f-notes').value    = '';
+  document.getElementById('test-modal').classList.add('open');
+}
+function editTest(companyId, testId) {
+  const c = companies.find(x => x.id === companyId);
+  const t = c.tests.find(x => x.id === testId);
+  editingTestId = { companyId, testId };
+  document.getElementById('test-modal-title').textContent = 'WEBテストを編集';
+  document.getElementById('test-f-company-id').value = companyId;
+  document.getElementById('test-f-type').value     = t.type;
+  document.getElementById('test-f-status').value   = t.status;
+  document.getElementById('test-f-deadline').value = t.deadline || '';
+  document.getElementById('test-f-score').value    = t.score || '';
+  document.getElementById('test-f-notes').value    = t.notes || '';
+  document.getElementById('test-modal').classList.add('open');
+}
+function closeTestModal() { document.getElementById('test-modal').classList.remove('open'); }
+function saveTest() {
+  const cid = document.getElementById('test-f-company-id').value;
+  const c = companies.find(x => x.id === cid);
+  if (!c) return;
+  const data = {
+    type:     document.getElementById('test-f-type').value,
+    status:   document.getElementById('test-f-status').value,
+    deadline: document.getElementById('test-f-deadline').value,
+    score:    document.getElementById('test-f-score').value.trim(),
+    notes:    document.getElementById('test-f-notes').value.trim(),
+  };
+  if (editingTestId) {
+    const t = c.tests.find(x => x.id === editingTestId.testId);
+    Object.assign(t, data);
+  } else {
+    c.tests = c.tests || [];
+    c.tests.push({ id: uid(), ...data });
+  }
+  c.updatedAt = new Date().toISOString();
+  save();
+  closeTestModal();
+  render();
+  showToast(editingTestId ? 'テストを更新しました' : 'テストを追加しました');
+}
+function deleteTest(companyId, testId) {
+  if (!confirm('このテスト記録を削除しますか？')) return;
+  const c = companies.find(x => x.id === companyId);
+  c.tests = c.tests.filter(t => t.id !== testId);
+  save();
+  render();
+}
+
+// ===== 面接記録 =====
+function openInterviewModal(companyId) {
+  editingInterviewId = null;
+  document.getElementById('interview-modal-title').textContent = '面接記録を追加';
+  document.getElementById('interview-f-company-id').value = companyId;
+  document.getElementById('interview-f-round').value       = '一次面接';
+  document.getElementById('interview-f-date').value        = '';
+  document.getElementById('interview-f-format').value      = 'Web';
+  document.getElementById('interview-f-interviewer').value = '';
+  document.getElementById('interview-f-questions').value   = '';
+  document.getElementById('interview-f-answers').value     = '';
+  document.getElementById('interview-f-impression').value  = '';
+  document.getElementById('interview-modal').classList.add('open');
+}
+function editInterview(companyId, iId) {
+  const c = companies.find(x => x.id === companyId);
+  const i = c.interviews.find(x => x.id === iId);
+  editingInterviewId = { companyId, iId };
+  document.getElementById('interview-modal-title').textContent = '面接記録を編集';
+  document.getElementById('interview-f-company-id').value = companyId;
+  document.getElementById('interview-f-round').value       = i.round;
+  document.getElementById('interview-f-date').value        = i.date || '';
+  document.getElementById('interview-f-format').value      = i.format || 'Web';
+  document.getElementById('interview-f-interviewer').value = i.interviewer || '';
+  document.getElementById('interview-f-questions').value   = i.questions || '';
+  document.getElementById('interview-f-answers').value     = i.answers || '';
+  document.getElementById('interview-f-impression').value  = i.impression || '';
+  document.getElementById('interview-modal').classList.add('open');
+}
+function closeInterviewModal() { document.getElementById('interview-modal').classList.remove('open'); }
+function saveInterview() {
+  const cid = document.getElementById('interview-f-company-id').value;
+  const c = companies.find(x => x.id === cid);
+  if (!c) return;
+  const data = {
+    round:       document.getElementById('interview-f-round').value,
+    date:        document.getElementById('interview-f-date').value,
+    format:      document.getElementById('interview-f-format').value,
+    interviewer: document.getElementById('interview-f-interviewer').value.trim(),
+    questions:   document.getElementById('interview-f-questions').value,
+    answers:     document.getElementById('interview-f-answers').value,
+    impression:  document.getElementById('interview-f-impression').value,
+  };
+  if (editingInterviewId) {
+    const i = c.interviews.find(x => x.id === editingInterviewId.iId);
+    Object.assign(i, data);
+  } else {
+    c.interviews = c.interviews || [];
+    c.interviews.push({ id: uid(), ...data });
+  }
+  // 面接記録に対応するステータスへ自動前進（逆行はしない）
+  const linkedStatus = ROUND_TO_STATUS[data.round];
+  let advanced = false;
+  if (linkedStatus && shouldAdvanceStatus(c.status, linkedStatus)) {
+    c.status = linkedStatus;
+    recordStatusChange(c, linkedStatus, data.date || undefined);
+    advanced = true;
+  }
+  c.updatedAt = new Date().toISOString();
+  save();
+  closeInterviewModal();
+  render();
+  showToast(
+    (editingInterviewId ? '面接記録を更新しました' : '面接記録を追加しました') +
+    (advanced ? `（ステータスを「${linkedStatus}」に更新）` : '')
+  );
+}
+function deleteInterview(companyId, iId) {
+  if (!confirm('この面接記録を削除しますか？')) return;
+  const c = companies.find(x => x.id === companyId);
+  c.interviews = c.interviews.filter(i => i.id !== iId);
+  save();
+  render();
+}
+
+// ===== OB/OG訪問 =====
+function openOGModal(companyId) {
+  editingOGId = null;
+  document.getElementById('og-modal-title').textContent = 'OB/OG訪問を追加';
+  document.getElementById('og-f-company-id').value = companyId;
+  document.getElementById('og-f-name').value      = '';
+  document.getElementById('og-f-position').value  = '';
+  document.getElementById('og-f-date').value      = '';
+  document.getElementById('og-f-notes').value     = '';
+  document.getElementById('og-f-followup').checked = false;
+  document.getElementById('og-modal').classList.add('open');
+}
+function editOG(companyId, ogId) {
+  const c = companies.find(x => x.id === companyId);
+  const o = c.ogVisits.find(x => x.id === ogId);
+  editingOGId = { companyId, ogId };
+  document.getElementById('og-modal-title').textContent = 'OB/OG訪問を編集';
+  document.getElementById('og-f-company-id').value = companyId;
+  document.getElementById('og-f-name').value       = o.name;
+  document.getElementById('og-f-position').value   = o.position || '';
+  document.getElementById('og-f-date').value       = o.date || '';
+  document.getElementById('og-f-notes').value      = o.notes || '';
+  document.getElementById('og-f-followup').checked = !!o.followUpDone;
+  document.getElementById('og-modal').classList.add('open');
+}
+function closeOGModal() { document.getElementById('og-modal').classList.remove('open'); }
+function saveOG() {
+  const cid = document.getElementById('og-f-company-id').value;
+  const c = companies.find(x => x.id === cid);
+  if (!c) return;
+  const name = document.getElementById('og-f-name').value.trim();
+  if (!name) { alert('氏名を入力してください'); return; }
+  const data = {
+    name,
+    position:     document.getElementById('og-f-position').value.trim(),
+    date:         document.getElementById('og-f-date').value,
+    notes:        document.getElementById('og-f-notes').value,
+    followUpDone: document.getElementById('og-f-followup').checked,
+  };
+  if (editingOGId) {
+    const o = c.ogVisits.find(x => x.id === editingOGId.ogId);
+    Object.assign(o, data);
+  } else {
+    c.ogVisits = c.ogVisits || [];
+    c.ogVisits.push({ id: uid(), ...data });
+  }
+  c.updatedAt = new Date().toISOString();
+  save();
+  closeOGModal();
+  render();
+  showToast(editingOGId ? 'OB/OG訪問を更新しました' : 'OB/OG訪問を追加しました');
+}
+function deleteOG(companyId, ogId) {
+  if (!confirm('このOB/OG訪問記録を削除しますか？')) return;
+  const c = companies.find(x => x.id === companyId);
+  c.ogVisits = c.ogVisits.filter(o => o.id !== ogId);
+  save();
+  render();
+}
+
+// ===== インタラクション（既存） =====
+function toggleDetail(id) {
+  document.getElementById(`detail-${id}`).classList.toggle('open');
+  document.getElementById(`icon-${id}`).classList.toggle('open');
+}
+
+function setFilter(btn) {
+  document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = btn.dataset.filter;
+  renderList();
+}
+
+function addTask(companyId) {
+  const titleEl = document.getElementById(`nt-title-${companyId}`);
+  const dateEl  = document.getElementById(`nt-date-${companyId}`);
+  const title = titleEl.value.trim();
+  if (!title) return;
+  const c = companies.find(x => x.id === companyId);
+  c.tasks = c.tasks || [];
+  c.tasks.push({ id: uid(), title, done: false, deadline: dateEl.value });
+  c.updatedAt = new Date().toISOString();
+  save();
+  titleEl.value = '';
+  dateEl.value = '';
+  render();
+}
+
+function toggleTask(companyId, taskId) {
+  const c = companies.find(x => x.id === companyId);
+  const t = c.tasks.find(x => x.id === taskId);
+  if (t) t.done = !t.done;
+  c.updatedAt = new Date().toISOString();
+  save();
+  render();
+}
+
+function deleteTask(companyId, taskId) {
+  const c = companies.find(x => x.id === companyId);
+  c.tasks = c.tasks.filter(t => t.id !== taskId);
+  c.updatedAt = new Date().toISOString();
+  save();
+  render();
+}
+
+function saveNotes(companyId) {
+  const c = companies.find(x => x.id === companyId);
+  c.notes = document.getElementById(`notes-${companyId}`).value;
+  c.updatedAt = new Date().toISOString();
+  save();
+}
+
+function deleteCompany(id) {
+  if (!confirm('この企業を「削除済み」に移動しますか？\n（メイン一覧から外れますが、削除済みタブから復元可能です）')) return;
+  const target = companies.find(c => c.id === id);
+  if (!target) return;
+  target.deleted = true;
+  target.deletedAt = new Date().toISOString();
+  if (target.emailSourceId) {
+    deletedSourceIds.add(target.emailSourceId);
+    if (target._appliedUpdates) {
+      for (const sid of target._appliedUpdates) deletedSourceIds.add(sid);
+    }
+    saveDeleted();
+  }
+  save();
+  render();
+  showToast('削除済みに移動しました');
+}
+
+function restoreCompany(id) {
+  const c = companies.find(x => x.id === id);
+  if (!c) return;
+  c.deleted = false;
+  delete c.deletedAt;
+  if (c.emailSourceId) {
+    deletedSourceIds.delete(c.emailSourceId);
+    if (c._appliedUpdates) {
+      for (const sid of c._appliedUpdates) deletedSourceIds.delete(sid);
+    }
+    saveDeleted();
+  }
+  c.updatedAt = new Date().toISOString();
+  save();
+  render();
+  showToast(`「${c.name}」を復元しました`);
+}
+
+function permanentlyDeleteCompany(id) {
+  const target = companies.find(c => c.id === id);
+  if (!target) return;
+  if (!confirm(`「${target.name}」を完全に削除しますか？\nこの操作は元に戻せません。\n（emailSourceIdは「再追加されないリスト」に残ります）`)) return;
+  if (target.emailSourceId) {
+    deletedSourceIds.add(target.emailSourceId);
+    if (target._appliedUpdates) {
+      for (const sid of target._appliedUpdates) deletedSourceIds.add(sid);
+    }
+    saveDeleted();
+  }
+  companies = companies.filter(c => c.id !== id);
+  save();
+  render();
+  showToast('完全に削除しました');
+}
+
+// ===== モーダル：企業 =====
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = '企業を追加';
+  document.getElementById('f-name').value     = '';
+  document.getElementById('f-industry').value = '';
+  document.getElementById('f-status').value   = '気になる';
+  document.getElementById('f-deadline').value = '';
+  document.getElementById('f-priority').value = '2';
+  document.getElementById('f-notes').value    = '';
+  document.getElementById('modal').classList.add('open');
+  setTimeout(() => document.getElementById('f-name').focus(), 100);
+}
+function openEditModal(id) {
+  const c = companies.find(x => x.id === id);
+  editingId = id;
+  document.getElementById('modal-title').textContent = '企業を編集';
+  document.getElementById('f-name').value     = c.name;
+  document.getElementById('f-industry').value = c.industry || '';
+  document.getElementById('f-status').value   = c.status;
+  document.getElementById('f-deadline').value = c.deadline || '';
+  document.getElementById('f-priority').value = c.priority;
+  document.getElementById('f-notes').value    = c.notes || '';
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function saveCompany() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { alert('企業名を入力してください'); return; }
+  const data = {
+    name,
+    industry: document.getElementById('f-industry').value.trim(),
+    status:   document.getElementById('f-status').value,
+    deadline: document.getElementById('f-deadline').value,
+    priority: parseInt(document.getElementById('f-priority').value),
+    notes:    document.getElementById('f-notes').value.trim(),
+    updatedAt: new Date().toISOString(),
+  };
+  if (editingId) {
+    const target = companies.find(x => x.id === editingId);
+    const statusChanged = target.status !== data.status;
+    Object.assign(target, data);
+    if (statusChanged) recordStatusChange(target, data.status);
+  } else {
+    companies.unshift({
+      id: uid(), ...data,
+      tasks: [], es: [],
+      timeline: [{ status: data.status, date: new Date().toISOString() }],
+      tests: [], interviews: [], ogVisits: [],
+      createdAt: new Date().toISOString()
+    });
+  }
+  save();
+  closeModal();
+  render();
+  showToast(editingId ? '更新しました' : '企業を追加しました');
+}
+
+// ===== モーダル：面接準備テンプレ =====
+function openTemplateModal(companyId) {
+  templateTargetId = companyId;
+  const c = companies.find(x => x.id === companyId);
+  document.getElementById('template-target').textContent = c.name;
+  document.getElementById('template-list').innerHTML =
+    INTERVIEW_TEMPLATE.map(t => `・${t.title}（${t.daysBefore}日前）`).join('<br>');
+  const def = new Date(); def.setDate(def.getDate() + 7);
+  document.getElementById('template-date').value = def.toISOString().slice(0,10);
+  document.getElementById('template-modal').classList.add('open');
+}
+function closeTemplateModal() { document.getElementById('template-modal').classList.remove('open'); }
+function applyTemplate() {
+  const dateStr = document.getElementById('template-date').value;
+  if (!dateStr) { alert('面接日を入力してください'); return; }
+  const c = companies.find(x => x.id === templateTargetId);
+  const interviewDate = new Date(dateStr);
+  for (const tmpl of INTERVIEW_TEMPLATE) {
+    const taskDate = new Date(interviewDate);
+    taskDate.setDate(taskDate.getDate() - tmpl.daysBefore);
+    c.tasks.push({
+      id: uid(), title: tmpl.title, done: false,
+      deadline: taskDate.toISOString().slice(0,10),
+    });
+  }
+  c.tasks.push({ id: uid(), title: `面接当日（${c.name}）`, done: false, deadline: dateStr });
+  c.updatedAt = new Date().toISOString();
+  save();
+  closeTemplateModal();
+  render();
+  showToast(`${INTERVIEW_TEMPLATE.length+1}個のタスクを追加しました`);
+}
+
+// ===== Gmail / Help モーダル =====
+function showGmailHelp()    { document.getElementById('gmail-modal').classList.add('open'); }
+function closeGmailModal()  { document.getElementById('gmail-modal').classList.remove('open'); }
+function showImportExport() { document.getElementById('ie-modal').classList.add('open'); }
+function closeIEModal()     { document.getElementById('ie-modal').classList.remove('open'); }
+
+// ===== エクスポート/インポート =====
+function exportData() {
+  const payload = { companies, stories, deletedSourceIds: [...deletedSourceIds] };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `shukatsu_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('JSONを出力しました');
+}
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      // 旧形式（配列のみ）と新形式（オブジェクト）両対応
+      let comps, stors, dels;
+      if (Array.isArray(data)) {
+        comps = data; stors = []; dels = [];
+      } else {
+        comps = data.companies || [];
+        stors = data.stories   || [];
+        dels  = data.deletedSourceIds || [];
+      }
+      if (!Array.isArray(comps)) throw new Error('Invalid format');
+      if (!confirm(`${comps.length}件の企業 + ${stors.length}件のストーリーを読み込みます。既存データは上書きされます。続行しますか？`)) return;
+      companies = comps;
+      stories   = stors;
+      deletedSourceIds = new Set(dels);
+      save();
+      saveStories();
+      saveDeleted();
+      render();
+      closeIEModal();
+      showToast(`${comps.length}件の企業を読み込みました`);
+    } catch (err) {
+      alert('JSONの読み込みに失敗しました：' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ===== ダークモード =====
+function applyTheme() {
+  const theme = localStorage.getItem(THEME_KEY) || 'light';
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('theme-btn').textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const cur = localStorage.getItem(THEME_KEY) || 'light';
+  localStorage.setItem(THEME_KEY, cur === 'dark' ? 'light' : 'dark');
+  applyTheme();
+}
+
+// ===== ブラウザ通知 =====
+function checkNotificationPermission() {
+  const host = document.getElementById('notif-banner-host');
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    host.innerHTML = `
+      <div style="background:#fff3cd;color:#856404;padding:10px 14px;border-radius:6px;margin-bottom:14px;display:flex;align-items:center;gap:10px;font-size:13px;">
+        🔔 締切通知をオンにすると、3日前と当日にお知らせします
+        <button onclick="requestNotif()" style="margin-left:auto;padding:4px 10px;background:var(--warning);color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">通知を有効化</button>
+      </div>`;
+  }
+}
+function requestNotif() {
+  Notification.requestPermission().then(p => {
+    document.getElementById('notif-banner-host').innerHTML = '';
+    if (p === 'granted') {
+      showToast('通知を有効にしました');
+      runNotificationCheck();
+    }
+  });
+}
+function runNotificationCheck() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const sent = JSON.parse(localStorage.getItem(NOTIF_KEY) || '{}');
+  const todayKey = new Date().toISOString().slice(0,10);
+  let updated = false;
+
+  for (const c of companies) {
+    if (c.deadline) {
+      const d = daysUntil(c.deadline);
+      if (d === 3 || d === 0) {
+        const k = `${c.id}-deadline-${d}-${todayKey}`;
+        if (!sent[k]) {
+          new Notification(`【${c.name}】締切${d === 0 ? '本日' : 'まで3日'}`, { body: `${c.status} / 締切: ${c.deadline}` });
+          sent[k] = true;
+          updated = true;
+        }
+      }
+    }
+    for (const t of (c.tasks || [])) {
+      if (t.done || !t.deadline) continue;
+      const d = daysUntil(t.deadline);
+      if (d === 3 || d === 0) {
+        const k = `${c.id}-${t.id}-${d}-${todayKey}`;
+        if (!sent[k]) {
+          new Notification(`【${c.name}】タスク締切${d === 0 ? '本日' : 'まで3日'}`, { body: t.title });
+          sent[k] = true;
+          updated = true;
+        }
+      }
+    }
+  }
+  if (updated) localStorage.setItem(NOTIF_KEY, JSON.stringify(sent));
+}
+
+// ===== トースト =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ===== ユーティリティ =====
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// オーバーレイ外クリックで閉じる
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => {
+    if (e.target === e.currentTarget) o.classList.remove('open');
+  });
+});
+
+// ===== 起動 =====
+applyTheme();
+load();
+applyPurge();
+applySyncData();
+render();
+checkNotificationPermission();
+runNotificationCheck();
+setInterval(runNotificationCheck, 60 * 60 * 1000);
+</script>
+</body>
+</html>

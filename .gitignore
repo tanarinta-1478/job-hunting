@@ -1,0 +1,21 @@
+# === 認証情報・個人データを含むファイル（コミット禁止） ===
+# sync-data.js には就活マイページのID/パスワード、テストセンターID、
+# 応募企業一覧などの個人情報・認証情報が含まれるため除外する。
+# セットアップ時は sync-data.example.js をコピーして作成すること。
+sync-data.js
+
+# 個人設定を config.js に切り出した場合もコミットしない（テンプレートは config.example.js）
+config.js
+
+# ローカルのエクスポート/バックアップ
+*.backup
+*.local.js
+export-*.json
+shukatsu-backup*.json
+
+# OS / エディタ
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
