@@ -50,5 +50,6 @@ window.gmailSyncData = [
       { "title": "サンプル社 Webテスト受検", "deadline": "" }
     ]
     // "passExcluded": true                       // 選考免除の招待参加などを合格実績から除外したい場合
+    // "_forceStatus": true                      // 通常は前進のみだが、本人申告による訂正でステータスを巻き戻したい場合
   }
 ];

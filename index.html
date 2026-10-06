@@ -1373,7 +1373,11 @@ function applySyncData() {
         if (target._appliedUpdates && target._appliedUpdates.includes(item.emailSourceId)) continue;
 
         // ステータスは前進のみ適用（古い同期データによる逆行を防止）
-        if (item.status && shouldAdvanceStatus(target.status, item.status)) {
+        // ただし _forceStatus: true の訂正エントリーは逆行も許可（本人申告による事実訂正用）
+        const statusOk = item._forceStatus
+          ? (item.status && item.status !== target.status)
+          : shouldAdvanceStatus(target.status, item.status);
+        if (item.status && statusOk) {
           target.status = item.status;
           recordStatusChange(target, item.status);
         }
