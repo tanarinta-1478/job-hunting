@@ -1417,7 +1417,12 @@ function applySyncData() {
       continue;
     }
 
-    const exists = companies.some(c => c.emailSourceId && c.emailSourceId === item.emailSourceId);
+    // 同じメールID、または同名の企業（削除済みも含む）が既にあれば新規追加しない。
+    // 削除した企業が別IDで登録されていた場合に、新規エントリーから作り直されるのを防ぐ。
+    const exists = companies.some(c =>
+      (c.emailSourceId && c.emailSourceId === item.emailSourceId) ||
+      (item.name && c.name === item.name)
+    );
     if (exists) continue;
 
     companies.unshift({
@@ -2832,6 +2837,7 @@ function runNotificationCheck() {
   let updated = false;
 
   for (const c of companies) {
+    if (c.deleted) continue;  // 削除済み企業の締切・タスクは通知しない
     if (c.deadline) {
       const d = daysUntil(c.deadline);
       if (d === 3 || d === 0) {
