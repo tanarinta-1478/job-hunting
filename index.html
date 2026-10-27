@@ -210,6 +210,16 @@
     }
 
     .company-list { display: flex; flex-direction: column; gap: 8px; }
+    .company-card.selected { outline: 2px solid var(--primary); }
+    .bulk-check { width: 18px; height: 18px; flex-shrink: 0; cursor: pointer; }
+    .bulk-bar {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 10px 12px; margin-bottom: 8px;
+      background: var(--bg-card); border-radius: 8px; box-shadow: var(--shadow);
+      position: sticky; top: 0; z-index: 5;
+    }
+    .bulk-count { font-weight: 600; font-size: 13px; margin-right: auto; }
+    .bulk-bar .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
     .company-card {
       background: var(--bg-card);
       border-radius: 8px;
@@ -804,7 +814,15 @@
         <option value="status-desc">ステータス逆順</option>
       </select>
       <div class="spacer"></div>
+      <button class="btn-secondary" id="select-mode-btn" onclick="toggleSelectMode()">☑ 選択</button>
       <button class="btn-primary" onclick="openAddModal()">＋ 企業を追加</button>
+    </div>
+
+    <div class="bulk-bar" id="bulk-bar" style="display:none;">
+      <span class="bulk-count" id="bulk-count">0件選択中</span>
+      <button class="btn-secondary" onclick="selectAllVisible()">表示中をすべて選択</button>
+      <button class="btn-secondary" onclick="clearSelection()">選択解除</button>
+      <button class="btn-danger" id="bulk-delete-btn" onclick="bulkDeleteCompanies()">選択した企業を削除</button>
     </div>
 
     <div class="company-list" id="company-list"></div>
@@ -1745,9 +1763,17 @@ function renderList() {
       </div>`;
     }
 
+    // 選択モード中はヘッダーのクリックで選択を切り替える（詳細は開かない）
+    const selected = selectMode && selectedIds.has(c.id);
+    const headerClick = selectMode ? `toggleSelect('${c.id}')` : `toggleDetail('${c.id}')`;
+    const checkbox = selectMode
+      ? `<input type="checkbox" class="bulk-check" ${selected ? 'checked' : ''} onclick="event.stopPropagation(); toggleSelect('${c.id}')">`
+      : '';
+
     return groupHeader + `
-    <div class="company-card">
-      <div class="company-header" onclick="toggleDetail('${c.id}')">
+    <div class="company-card${selected ? ' selected' : ''}">
+      <div class="company-header" onclick="${headerClick}">
+        ${checkbox}
         <div class="priority-dot priority-${c.priority}"></div>
         <div style="flex:1;min-width:0;">
           <div class="company-name">${esc(c.name)}${gmailBadge}</div>
@@ -1843,6 +1869,7 @@ function renderTrash() {
 function render() {
   renderStats();
   renderList();
+  updateBulkBar();
   if (currentTab === 'tasks')    renderWeeklyTasks();
   if (currentTab === 'es')       renderES();
   if (currentTab === 'calendar') renderCalendar();
@@ -2600,22 +2627,75 @@ function saveNotes(companyId) {
   save();
 }
 
+// 企業を「削除済み」に移す（保存は呼び出し側で行う）。
+// Gmail同期で作り直されないよう、メールIDも再追加しないリストに入れる。
+function moveToTrash(target, deletedAt) {
+  target.deleted = true;
+  target.deletedAt = deletedAt;
+  if (target.emailSourceId) {
+    deletedSourceIds.add(target.emailSourceId);
+    for (const sid of (target._appliedUpdates || [])) deletedSourceIds.add(sid);
+  }
+}
+
 function deleteCompany(id) {
   if (!confirm('この企業を「削除済み」に移動しますか？\n（メイン一覧から外れますが、削除済みタブから復元可能です）')) return;
   const target = companies.find(c => c.id === id);
   if (!target) return;
-  target.deleted = true;
-  target.deletedAt = new Date().toISOString();
-  if (target.emailSourceId) {
-    deletedSourceIds.add(target.emailSourceId);
-    if (target._appliedUpdates) {
-      for (const sid of target._appliedUpdates) deletedSourceIds.add(sid);
-    }
-    saveDeleted();
-  }
+  moveToTrash(target, new Date().toISOString());
+  saveDeleted();
   save();
   render();
   showToast('削除済みに移動しました');
+}
+
+// ===== 複数選択・一括削除 =====
+let selectMode = false;
+const selectedIds = new Set();
+
+function toggleSelectMode() {
+  selectMode = !selectMode;
+  selectedIds.clear();
+  render();
+}
+
+function toggleSelect(id) {
+  if (selectedIds.has(id)) selectedIds.delete(id);
+  else selectedIds.add(id);
+  render();
+}
+
+function selectAllVisible() {
+  for (const c of getFilteredCompanies()) selectedIds.add(c.id);
+  render();
+}
+
+function clearSelection() {
+  selectedIds.clear();
+  render();
+}
+
+function updateBulkBar() {
+  document.getElementById('bulk-bar').style.display = selectMode ? 'flex' : 'none';
+  document.getElementById('select-mode-btn').textContent = selectMode ? '✕ 選択をやめる' : '☑ 選択';
+  document.getElementById('bulk-count').textContent = `${selectedIds.size}件選択中`;
+  document.getElementById('bulk-delete-btn').disabled = selectedIds.size === 0;
+}
+
+function bulkDeleteCompanies() {
+  const targets = companies.filter(c => selectedIds.has(c.id) && !c.deleted);
+  if (targets.length === 0) return;
+  const names = targets.slice(0, 8).map(c => `・${c.name}`).join('\n')
+    + (targets.length > 8 ? `\n…ほか${targets.length - 8}件` : '');
+  if (!confirm(`${targets.length}件の企業を「削除済み」に移動しますか？\n\n${names}\n\n（削除済みタブから復元可能です）`)) return;
+  const now = new Date().toISOString();
+  for (const c of targets) moveToTrash(c, now);
+  saveDeleted();
+  save();
+  selectedIds.clear();
+  selectMode = false;
+  render();
+  showToast(`${targets.length}件を削除済みに移動しました`);
 }
 
 function restoreCompany(id) {
